@@ -4,16 +4,21 @@
   "type": "module",
   "scripts": {
     "build": "nuxt build",
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 3200 --host",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "lint": "eslint .",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "db:codegen": "pnpx supabase gen types --linked > app/types/database.types.ts",
+    "db:push": "pnpx supabase db push"
   },
   "dependencies": {
     "@iconify-json/lucide": "^1.2.98",
     "@iconify-json/simple-icons": "^1.2.74",
     "@nuxt/ui": "^4.5.1",
+    "@nuxtjs/supabase": "^2.0.4",
+    "@supabase/supabase-js": "^2.99.3",
+    "cheerio": "^1.2.0",
     "nuxt": "^4.4.2",
     "tailwindcss": "^4.2.1"
   },
