@@ -19,25 +19,53 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ## 3. Core Features
 
-### 3.1 Structure Grabber
-- **Endpoint**: `GET /api/structure`
-- **Functionality**:
-  - Queries `https://www.winamax.fr/paris-sportifs/calendar`.
-  - Extracts the `PRELOADED_STATE` variable from the HTML.
-  - Parses and stores the data into structured tables (`winamax_sports`, `winamax_categories`, `winamax_tournaments`, `winamax_bet_filters`, `winamax_bet_categories`).
-  - Uses object keys from the source as primary keys in the database.
-
-### 3.2 Live data grabber
+### 3.1 Live Data Grabber
 - **Endpoint**: `GET /api/live`
 - **Functionality**:
-  - Queries `https://sports-eu-west-3.winamax.fr/uof-sports-server/socket.io/?language=FR&version=3.39.1&embed=false&EIO=3&transport=polling&t=...`.
-  - Performs the socket.io handshake to obtain a `sid`.
+  - Performs the socket.io handshake to obtain a `sid` from Winamax.
   - Emulates the polling sequence to retrieve matches, odds, bets, and outcomes.
-  - Returns the aggregated market data.
+  - Stores matches, bets, and outcomes in the database (upsert).
+  - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
+  - Uses object keys from the source as primary keys in the database.
 
 ## 4. Database Schema
 
 ### 4.1 Winamax Metadata Tables
+...
+- **`winamax_matches`**:
+  - `id`: BigInt (Primary Key)
+  - `sport_id`: BigInt (Foreign Key to `winamax_sports`)
+  - `category_id`: BigInt (Foreign Key to `winamax_categories`)
+  - `tournament_id`: BigInt (Foreign Key to `winamax_tournaments`)
+  - `title`: Text
+  - `status`: Text
+  - `match_start`: Timestamp with timezone
+  - `competitor1_id`: BigInt
+  - `competitor1_name`: Text
+  - `competitor2_id`: BigInt
+  - `competitor2_name`: Text
+  - `main_bet_id`: BigInt (Nullable)
+  - `updated_at`: Timestamp with timezone
+
+- **`winamax_bets`**:
+  - `id`: BigInt (Primary Key)
+  - `match_id`: BigInt (Foreign Key to `winamax_matches`)
+  - `title`: Text
+  - `bet_type_category_id`: BigInt (Foreign Key to `winamax_bet_categories`)
+  - `market_id`: BigInt (Nullable)
+  - `updated_at`: Timestamp with timezone
+
+- **`winamax_outcomes`**:
+  - `id`: BigInt (Primary Key)
+  - `bet_id`: BigInt (Foreign Key to `winamax_bets`)
+  - `label`: Text
+  - `code`: Text (Nullable)
+  - `updated_at`: Timestamp with timezone
+
+- **`winamax_odds_history`**:
+  - `outcome_id`: BigInt (Primary Key, Foreign Key to `winamax_outcomes`)
+  - `timestamp`: Timestamp with timezone (Primary Key, rounded to 1-minute)
+  - `value`: Numeric
 
 - **`winamax_sports`**:
   - `id`: BigInt (Primary Key)

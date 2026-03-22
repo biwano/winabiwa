@@ -1,10 +1,78 @@
 import { yeast } from '../yeast.js'
 
+interface WinamaxEntity {
+  id?: number
+  [key: string]: unknown
+}
+
+export interface WinamaxSport extends WinamaxEntity {
+  sportName: string
+  categories?: number[]
+}
+
+export interface WinamaxCategory extends WinamaxEntity {
+  categoryName: string
+  flag?: string
+  sportId?: number
+  tournaments?: number[]
+}
+
+export interface WinamaxTournament extends WinamaxEntity {
+  tournamentName: string
+  categoryId?: number
+  srTournamentId?: string
+  srSeasonId?: string
+}
+
+export interface WinamaxMatch extends WinamaxEntity {
+  sportId: number
+  categoryId: number
+  tournamentId: number
+  title: string
+  status: string
+  matchStart: number
+  competitor1Id: number
+  competitor1Name: string
+  competitor2Id: number
+  competitor2Name: string
+  mainBetId?: number
+}
+
+export interface WinamaxBet extends WinamaxEntity {
+  matchId: number
+  betTitle: string
+  betTypeCategoryId: number
+  marketId: number
+}
+
+export interface WinamaxOutcome extends WinamaxEntity {
+  betId: number
+  label: string
+  code?: string
+}
+
+export interface WinamaxFilter extends WinamaxEntity {
+  betFilterName: string
+  betFilterParentId?: number
+  betFilterIsDefault?: boolean
+  displayOrder: number
+}
+
+export interface WinamaxBetCategory extends WinamaxEntity {
+  name: string
+  displayOrder: number
+}
+
 export interface WinamaxLiveData {
-  calendar: Record<string, unknown>
-  matches: Record<string, unknown>
-  bets: Record<string, unknown>
-  outcomes: Record<string, unknown>
+  sports: Record<string, WinamaxSport>
+  categories: Record<string, WinamaxCategory>
+  tournaments: Record<string, WinamaxTournament>
+  filters: Record<string, WinamaxFilter>
+  betCategories: Record<string, WinamaxBetCategory>
+  matches: Record<string, WinamaxMatch>
+  bets: Record<string, WinamaxBet>
+  outcomes: Record<string, WinamaxOutcome>
+  odds: Record<string, number>
 }
 
 const BASE_URL = 'https://sports-eu-west-3.winamax.fr/uof-sports-server/socket.io/'
@@ -36,7 +104,6 @@ const DEFAULT_HEADERS = {
 function parseEngineIOPackets(data: string): string[] {
   const packets: string[] = []
   let offset = 0
-  console.log('data', data)
 
   while (offset < data.length) {
     const colonIndex = data.indexOf(':', offset)
@@ -109,10 +176,15 @@ async function performRequest(method: 'GET' | 'POST', url: string, jar: CookieJa
 
 export async function fetchWinamaxLiveData(): Promise<WinamaxLiveData> {
   const liveData: WinamaxLiveData = {
-    calendar: {},
+    sports: {},
+    categories: {},
+    tournaments: {},
+    filters: {},
+    betCategories: {},
     matches: {},
     bets: {},
-    outcomes: {}
+    outcomes: {},
+    odds: {}
   }
 
   const jar = new CookieJar()
@@ -134,6 +206,8 @@ export async function fetchWinamaxLiveData(): Promise<WinamaxLiveData> {
 
   const pollUrl = `${BASE_URL}?${commonParams.toString()}&t=${yeast()}&sid=${sid}`
 
+  await performRequest('GET', pollUrl, jar)
+
   await performRequest('POST', pollUrl, jar, '31:42["m",{"route":"calendar:24"}]')
 
   const calendar = await performRequest('GET', pollUrl, jar)
@@ -142,10 +216,15 @@ export async function fetchWinamaxLiveData(): Promise<WinamaxLiveData> {
     const eventData = JSON.parse(packet.substring(2))
     if (Array.isArray(eventData) && eventData[0] === 'm') {
       const payload = eventData[1]
-      if (payload.calendar) Object.assign(liveData.calendar, payload.calendar)
+      if (payload.sports) Object.assign(liveData.sports, payload.sports)
+      if (payload.categories) Object.assign(liveData.categories, payload.categories)
+      if (payload.tournaments) Object.assign(liveData.tournaments, payload.tournaments)
+      if (payload.filters) Object.assign(liveData.filters, payload.filters)
+      if (payload.betCategories) Object.assign(liveData.betCategories, payload.betCategories)
       if (payload.matches) Object.assign(liveData.matches, payload.matches)
       if (payload.bets) Object.assign(liveData.bets, payload.bets)
       if (payload.outcomes) Object.assign(liveData.outcomes, payload.outcomes)
+      if (payload.odds) Object.assign(liveData.odds, payload.odds)
     }
   }
 

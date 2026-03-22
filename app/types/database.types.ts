@@ -95,6 +95,48 @@ export type Database = {
           }
         ]
       }
+      winamax_bets: {
+        Row: {
+          bet_type_category_id: number | null
+          id: number
+          market_id: number | null
+          match_id: number | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bet_type_category_id?: number | null
+          id: number
+          market_id?: number | null
+          match_id?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bet_type_category_id?: number | null
+          id?: number
+          market_id?: number | null
+          match_id?: number | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'winamax_bets_bet_type_category_id_fkey'
+            columns: ['bet_type_category_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_bet_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'winamax_bets_match_id_fkey'
+            columns: ['match_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_matches'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       winamax_categories: {
         Row: {
           flag: string | null
@@ -123,6 +165,141 @@ export type Database = {
             columns: ['sport_id']
             isOneToOne: false
             referencedRelation: 'winamax_sports'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      winamax_matches: {
+        Row: {
+          category_id: number | null
+          competitor1_id: number | null
+          competitor1_name: string | null
+          competitor2_id: number | null
+          competitor2_name: string | null
+          id: number
+          main_bet_id: number | null
+          match_start: string | null
+          sport_id: number | null
+          status: string | null
+          title: string | null
+          tournament_id: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id?: number | null
+          competitor1_id?: number | null
+          competitor1_name?: string | null
+          competitor2_id?: number | null
+          competitor2_name?: string | null
+          id: number
+          main_bet_id?: number | null
+          match_start?: string | null
+          sport_id?: number | null
+          status?: string | null
+          title?: string | null
+          tournament_id?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: number | null
+          competitor1_id?: number | null
+          competitor1_name?: string | null
+          competitor2_id?: number | null
+          competitor2_name?: string | null
+          id?: number
+          main_bet_id?: number | null
+          match_start?: string | null
+          sport_id?: number | null
+          status?: string | null
+          title?: string | null
+          tournament_id?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'winamax_matches_category_id_fkey'
+            columns: ['category_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_categories'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'winamax_matches_main_bet_id_fkey'
+            columns: ['main_bet_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_bets'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'winamax_matches_sport_id_fkey'
+            columns: ['sport_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_sports'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'winamax_matches_tournament_id_fkey'
+            columns: ['tournament_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_tournaments'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      winamax_odds_history: {
+        Row: {
+          outcome_id: number
+          timestamp: string
+          value: number
+        }
+        Insert: {
+          outcome_id: number
+          timestamp: string
+          value: number
+        }
+        Update: {
+          outcome_id?: number
+          timestamp?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'winamax_odds_history_outcome_id_fkey'
+            columns: ['outcome_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_outcomes'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      winamax_outcomes: {
+        Row: {
+          bet_id: number | null
+          code: string | null
+          id: number
+          label: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bet_id?: number | null
+          code?: string | null
+          id: number
+          label?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bet_id?: number | null
+          code?: string | null
+          id?: number
+          label?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'winamax_outcomes_bet_id_fkey'
+            columns: ['bet_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_bets'
             referencedColumns: ['id']
           }
         ]
