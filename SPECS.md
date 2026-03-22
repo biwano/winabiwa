@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a structure grabber system to scrape and store market metadata (sports, categories, tournaments) for analysis.
+Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a live data grabber system to scrape and store market metadata (sports, categories, tournaments) and odds for analysis.
 
 ## 2. Technical Stack
 
@@ -23,10 +23,23 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 - **Endpoint**: `GET /api/live`
 - **Functionality**:
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
-  - Emulates the polling sequence to retrieve matches, odds, bets, and outcomes.
-  - Stores matches, bets, and outcomes in the database (upsert).
+  - Emulates the polling sequence to retrieve market structure (sports, categories, tournaments, filters, bet categories), matches, odds, bets, and outcomes.
+  - Stores metadata, matches, bets, and outcomes in the database (upsert).
   - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
   - Uses object keys from the source as primary keys in the database.
+
+### 3.2 Main Page (Match List)
+- **Features**:
+  - Displays a list of matches ordered by `match_start` descending.
+  - Filtering: Users can filter matches by sport, tournament, or category.
+  - Pagination: The list is paginated to handle large numbers of matches.
+  - Real-time: List updates when new data is grabbed.
+
+### 3.3 Match Details (Side Panel)
+- **Features**:
+  - Clicking on a match opens a side panel.
+  - Displays a chart showing the evolution of the associated odds over time.
+  - Uses data from the `winamax_odds_history` table.
 
 ## 4. Database Schema
 
@@ -100,3 +113,11 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - `name`: Text
   - `display_order`: Integer
   - `updated_at`: Timestamp with timezone
+
+## 5. Security (RLS)
+
+### 5.1 Winamax Data
+All data stored in Winamax-related tables (`winamax_*`) is publicly readable (accessible to everyone, including unauthenticated users). Write access is restricted to the server-side role.
+
+### 5.2 User Data
+Standard Supabase user-level access controls apply to user profiles and preferences.

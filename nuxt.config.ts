@@ -9,6 +9,10 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true
   },
+  components: [
+    { path: '~/features', prefix: '', extensions: ['vue'], pathPrefix: false },
+    '~/components'
+  ],
   css: ['~/assets/css/main.css'],
 
   routeRules: {
