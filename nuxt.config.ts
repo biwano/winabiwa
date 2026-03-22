@@ -9,7 +9,6 @@ export default defineNuxtConfig({
   devtools: {
     enabled: true
   },
-
   css: ['~/assets/css/main.css'],
 
   routeRules: {
@@ -25,5 +24,8 @@ export default defineNuxtConfig({
         braceStyle: '1tbs'
       }
     }
+  },
+  supabase: {
+    redirect: false
   }
 })
