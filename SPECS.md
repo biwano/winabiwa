@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a snapshot system to scrape and store market metadata (sports, categories, tournaments) for analysis.
+Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a structure system to scrape and store market metadata (sports, categories, tournaments) for analysis.
 
 ## 2. Technical Stack
 
@@ -19,8 +19,8 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ## 3. Core Features
 
-### 3.1 Snapshot System
-- **Endpoint**: `GET /api/snapshot/calendar`
+### 3.1 Structure System
+- **Endpoint**: `GET /api/structure/calendar`
 - **Functionality**:
   - Queries `https://www.winamax.fr/paris-sportifs/calendar`.
   - Extracts the `PRELOADED_STATE` variable from the HTML.

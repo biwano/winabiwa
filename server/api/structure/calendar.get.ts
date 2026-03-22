@@ -1,5 +1,6 @@
 import { load } from 'cheerio'
-import { serverSupabaseClient } from '#supabase/server'
+import { serverSupabaseServiceRole } from '#supabase/server'
+import type { PostgrestError } from '@supabase/supabase-js'
 
 async function fetchPreloadedState(url: string) {
   const html = await $fetch<string>(url)
@@ -73,9 +74,20 @@ async function fetchPreloadedState(url: string) {
 export default defineEventHandler(async (event) => {
   try {
     const state = await fetchPreloadedState('https://www.winamax.fr/paris-sportifs/calendar')
-    const client = await serverSupabaseClient(event)
+    // Use service role to bypass RLS for administrative structure update
+    const client = serverSupabaseServiceRole(event)
 
     const now = new Date().toISOString()
+
+    // Helper to throw on supabase error
+    const checkError = (res: { error: PostgrestError | null }) => {
+      if (res.error) {
+        throw createError({
+          statusCode: 500,
+          statusMessage: `Supabase error: ${res.error.message} (${res.error.code})`
+        })
+      }
+    }
 
     // 1. Upsert Sports
     if (state.sports) {
@@ -84,9 +96,7 @@ export default defineEventHandler(async (event) => {
         name: (sport as { sportName: string }).sportName,
         updated_at: now
       }))
-      console.log('sportsToUpsert', sportsToUpsert)
-      const res = await client.from('winamax_sports').upsert(sportsToUpsert)
-      console.log('res', res)
+      checkError(await client.from('winamax_sports').upsert(sportsToUpsert))
     }
 
     // 2. Upsert Categories
@@ -111,7 +121,7 @@ export default defineEventHandler(async (event) => {
           updated_at: now
         }
       })
-      await client.from('winamax_categories').upsert(categoriesToUpsert)
+      checkError(await client.from('winamax_categories').upsert(categoriesToUpsert))
     }
 
     // 3. Upsert Tournaments
@@ -137,7 +147,7 @@ export default defineEventHandler(async (event) => {
           updated_at: now
         }
       })
-      await client.from('winamax_tournaments').upsert(tournamentsToUpsert)
+      checkError(await client.from('winamax_tournaments').upsert(tournamentsToUpsert))
     }
 
     // 4. Upsert Bet Filters
@@ -158,7 +168,7 @@ export default defineEventHandler(async (event) => {
         if (a.parent_id !== null && b.parent_id === null) return 1
         return 0
       })
-      await client.from('winamax_bet_filters').upsert(sortedFilters)
+      checkError(await client.from('winamax_bet_filters').upsert(sortedFilters))
     }
 
     // 5. Upsert Bet Categories
@@ -169,7 +179,7 @@ export default defineEventHandler(async (event) => {
         display_order: (cat as { displayOrder: number }).displayOrder,
         updated_at: now
       }))
-      await client.from('winamax_bet_categories').upsert(betCategoriesToUpsert)
+      checkError(await client.from('winamax_bet_categories').upsert(betCategoriesToUpsert))
     }
 
     return {
@@ -184,10 +194,10 @@ export default defineEventHandler(async (event) => {
       }
     }
   } catch (error: unknown) {
-    console.error('Snapshot failed:', error)
+    console.error('Structure update failed:', error)
     throw createError({
       statusCode: 500,
-      statusMessage: (error as Error).message || 'Unknown error during snapshot'
+      statusMessage: (error as Error).message || 'Unknown error during structure update'
     })
   }
 })
