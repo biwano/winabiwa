@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 const filters = computed({
   get: () => props.modelValue,
-  set: (val) => emit('update:modelValue', val)
+  set: val => emit('update:modelValue', val)
 })
 
 const client = useSupabaseClient()
@@ -35,13 +35,13 @@ watch(() => filters.value.sport_id, async (sportId) => {
     filters.value.tournament_id = null
     return
   }
-  
+
   const { data } = await client
     .from('winamax_categories')
     .select('*')
     .eq('sport_id', sportId)
     .order('name')
-  
+
   categories.value = data || []
   filters.value.category_id = null
   filters.value.tournament_id = null
@@ -54,13 +54,13 @@ watch(() => filters.value.category_id, async (categoryId) => {
     filters.value.tournament_id = null
     return
   }
-  
+
   const { data } = await client
     .from('winamax_tournaments')
     .select('*')
     .eq('category_id', categoryId)
     .order('name')
-  
+
   tournaments.value = data || []
   filters.value.tournament_id = null
 }, { immediate: true })
@@ -98,33 +98,33 @@ function resetFilters() {
       placeholder="Search match title..."
       class="flex-1"
     />
-    
+
     <USelect
       v-model="filters.sport_id"
-      :options="sportOptions"
+      :items="sportOptions"
       class="w-full md:w-48"
     />
-    
+
     <USelect
       v-model="filters.category_id"
-      :options="categoryOptions"
+      :items="categoryOptions"
       :disabled="!filters.sport_id"
       class="w-full md:w-48"
     />
-    
+
     <USelect
       v-model="filters.tournament_id"
-      :options="tournamentOptions"
+      :items="tournamentOptions"
       :disabled="!filters.category_id"
       class="w-full md:w-48"
     />
 
     <UButton
+      v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search"
       icon="i-lucide-x"
       color="neutral"
       variant="ghost"
       @click="resetFilters"
-      v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search"
     />
   </div>
 </template>

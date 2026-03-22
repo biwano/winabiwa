@@ -13,6 +13,11 @@ const filters = ref<MatchFilters>({
 const page = ref(1)
 const itemsPerPage = 20
 
+// Reset page to 1 when filters change
+watch(filters, () => {
+  page.value = 1
+}, { deep: true })
+
 const { data: matchesData, pending } = await useAsyncData('matches', async () => {
   let query = client
     .from('winamax_matches')
@@ -134,10 +139,9 @@ function getFormattedDate(dateStr: string) {
       class="flex justify-center mt-6"
     >
       <UPagination
-        v-model="page"
+        v-model:page="page"
         :total="matchesData?.count || 0"
-        :page-count="itemsPerPage"
-        :max="7"
+        :items-per-page="itemsPerPage"
       />
     </div>
 

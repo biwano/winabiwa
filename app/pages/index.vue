@@ -1,8 +1,8 @@
 <template>
   <UContainer class="py-10">
     <UPageHeader
-      title="Winabiwa Live Matches"
-      description="Monitor live matches and odds from Winamax. Filters and pagination included."
+      title="Winabiwa"
+      description="Monitor live matches and odds."
     />
 
     <div class="mt-8">

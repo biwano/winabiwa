@@ -9,7 +9,7 @@ import {
   LegendComponent
 } from 'echarts/components.js'
 import VChart from 'vue-echarts'
-import type { WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import type { WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 
 use([
   CanvasRenderer,
@@ -22,6 +22,7 @@ use([
 
 const props = defineProps<{
   oddsHistory: WinamaxOddsHistory[]
+  outcomes: WinamaxOutcome[]
   title?: string
 }>()
 
@@ -30,6 +31,25 @@ const option = computed(() => {
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
 
+  const series = props.outcomes.map(outcome => {
+    const data = sortedHistory
+      .filter(item => item.outcome_id === outcome.id)
+      .map(item => [new Date(item.timestamp).getTime(), item.value])
+
+    return {
+      name: outcome.label || 'Unknown',
+      type: 'line',
+      smooth: true,
+      data,
+      lineStyle: {
+        width: 3
+      },
+      emphasis: {
+        focus: 'series'
+      }
+    }
+  })
+
   return {
     title: {
       text: props.title,
@@ -37,16 +57,24 @@ const option = computed(() => {
     },
     tooltip: {
       trigger: 'axis',
-      formatter: (params: { value: [number, number] }[]) => {
-        const data = params[0]
-        if (!data) return ''
-        return `${new Date(data.value[0]).toLocaleString()}<br/>Odds: <b>${data.value[1]}</b>`
+      formatter: (params: any[]) => {
+        if (!params || params.length === 0) return ''
+        let result = `${new Date(params[0].value[0]).toLocaleString()}<br/>`
+        params.forEach(param => {
+          result += `${param.marker} ${param.seriesName}: <b>${param.value[1]}</b><br/>`
+        })
+        return result
       }
+    },
+    legend: {
+      top: 'bottom',
+      padding: [10, 0, 0, 0]
     },
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
+      top: '5%',
       containLabel: true
     },
     xAxis: {
@@ -57,23 +85,7 @@ const option = computed(() => {
       type: 'value',
       scale: true
     },
-    series: [
-      {
-        name: 'Odds',
-        type: 'line',
-        smooth: true,
-        data: sortedHistory.map(item => [new Date(item.timestamp).getTime(), item.value]),
-        areaStyle: {
-          opacity: 0.1
-        },
-        lineStyle: {
-          width: 3
-        },
-        itemStyle: {
-          color: '#d946ef' // Fuchsia-500
-        }
-      }
-    ]
+    series
   }
 })
 </script>
