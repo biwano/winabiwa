@@ -11,7 +11,7 @@ useHead({
   }
 })
 
-const title = 'Winabiwa'
+const title = 'WinaBiwa'
 const description = 'Live data grabber and analysis for winamax'
 
 useSeoMeta({

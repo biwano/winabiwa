@@ -1,11 +1,8 @@
 <template>
-  <UContainer class="py-10">
+  <UContainer>
     <UPageHeader
       title="Live matches"
     />
-
-    <div class="mt-8">
-      <MatchList />
-    </div>
+    <MatchList />
   </UContainer>
 </template>

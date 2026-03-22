@@ -11,7 +11,7 @@ const filters = ref<MatchFilters>({
 })
 
 const page = ref(1)
-const itemsPerPage = 20
+const itemsPerPage = 10
 
 // Reset page to 1 when filters change
 watch(filters, () => {
@@ -83,7 +83,7 @@ function getFormattedDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="space-y-6">
+  <div class="space-y-4">
     <MatchFilters v-model="filters" />
 
     <UTable

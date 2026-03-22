@@ -69,13 +69,25 @@ watch(() => props.match, async (newMatch) => {
         v-if="match"
         class="space-y-6 p-6 overflow-y-auto"
       >
-        <div>
-          <h2 class="text-xl font-bold">
-            {{ match.title }}
-          </h2>
-          <p class="text-sm text-gray-500">
-            {{ match.match_start ? new Date(match.match_start).toLocaleString() : '' }}
-          </p>
+        <div class="flex items-start justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <h2 class="text-xl font-bold truncate">
+              {{ match.title }}
+            </h2>
+            <p class="text-sm text-gray-500">
+              {{ match.match_start ? new Date(match.match_start).toLocaleString() : '' }}
+            </p>
+          </div>
+          <UButton
+            v-if="match"
+            :to="`https://www.winamax.fr/paris-sportifs/match/${match.id}`"
+            target="_blank"
+            color="neutral"
+            variant="ghost"
+            icon="i-lucide-external-link"
+            size="sm"
+            title="Open on Winamax"
+          />
         </div>
 
         <div

@@ -105,7 +105,7 @@ function resetFilters() {
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row gap-4 mb-6">
+  <div class="flex flex-col md:flex-row gap-4 mb-4">
     <UInput
       v-model="filters.search"
       icon="i-lucide-search"

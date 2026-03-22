@@ -19,11 +19,11 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ## 3. Core Features
 
-### 3.1 Live Data Grabber
-- **Endpoint**: `GET /api/live`
+### 3.1 Market Structure & Live Data Grabber
+- **Endpoint**: `GET /api/live` (Note: `/api/structure` is not needed as it's part of this endpoint)
 - **Functionality**:
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
-  - Emulates the polling sequence to retrieve market structure (sports, categories, tournaments, filters, bet categories), matches, odds, bets, and outcomes.
+  - Retrieves the market structure (sports, categories, tournaments, filters, bet categories) and match data.
   - Stores metadata, matches, bets, and outcomes in the database (upsert).
   - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
   - Uses object keys from the source as primary keys in the database.
@@ -38,6 +38,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 ### 3.3 Match Details (Side Panel)
 - **Features**:
   - Clicking on a match opens a side panel.
+  - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Uses data from the `winamax_odds_history` table.
 
