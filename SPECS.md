@@ -2,7 +2,7 @@
 
 ## 1. Project Overview
 
-Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a structure system to scrape and store market metadata (sports, categories, tournaments) for analysis.
+Winabiwa is a web-based application that monitors match ratings by querying the https://www.winamax.fr website. It includes a structure grabber system to scrape and store market metadata (sports, categories, tournaments) for analysis.
 
 ## 2. Technical Stack
 
@@ -19,13 +19,21 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ## 3. Core Features
 
-### 3.1 Structure System
-- **Endpoint**: `GET /api/structure/calendar`
+### 3.1 Structure Grabber
+- **Endpoint**: `GET /api/structure`
 - **Functionality**:
   - Queries `https://www.winamax.fr/paris-sportifs/calendar`.
   - Extracts the `PRELOADED_STATE` variable from the HTML.
   - Parses and stores the data into structured tables (`winamax_sports`, `winamax_categories`, `winamax_tournaments`, `winamax_bet_filters`, `winamax_bet_categories`).
   - Uses object keys from the source as primary keys in the database.
+
+### 3.2 Live data grabber
+- **Endpoint**: `GET /api/live`
+- **Functionality**:
+  - Queries `https://sports-eu-west-3.winamax.fr/uof-sports-server/socket.io/?language=FR&version=3.39.1&embed=false&EIO=3&transport=polling&t=...`.
+  - Performs the socket.io handshake to obtain a `sid`.
+  - Emulates the polling sequence to retrieve matches, odds, bets, and outcomes.
+  - Returns the aggregated market data.
 
 ## 4. Database Schema
 
