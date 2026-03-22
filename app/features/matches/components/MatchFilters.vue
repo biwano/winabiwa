@@ -9,10 +9,24 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: MatchFilters): void
 }>()
 
-const filters = computed({
-  get: () => props.modelValue,
-  set: val => emit('update:modelValue', val)
-})
+const filters = ref<MatchFilters>({ ...props.modelValue })
+
+// Sync local state when prop changes
+watch(() => props.modelValue, (newVal) => {
+  if (
+    newVal.search !== filters.value.search
+    || newVal.sport_id !== filters.value.sport_id
+    || newVal.category_id !== filters.value.category_id
+    || newVal.tournament_id !== filters.value.tournament_id
+  ) {
+    filters.value = { ...newVal }
+  }
+}, { deep: true })
+
+// Emit changes to parent as a new object to trigger parent watches
+watch(filters, (newVal) => {
+  emit('update:modelValue', { ...newVal })
+}, { deep: true })
 
 const client = useSupabaseClient()
 

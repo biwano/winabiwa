@@ -1,8 +1,7 @@
 <template>
   <UContainer class="py-10">
     <UPageHeader
-      title="Winabiwa"
-      description="Monitor live matches and odds."
+      title="Live matches"
     />
 
     <div class="mt-8">
