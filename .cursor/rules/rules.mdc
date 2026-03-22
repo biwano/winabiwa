@@ -1,0 +1,41 @@
+---
+description: Application specifications and project overview
+globs:
+alwaysApply: true
+---
+
+# Application Specifications
+
+Always refer to `SPECS.md` in the root directory to understand the application specifications, technical stack, core features, database schema, and system architecture.
+
+## Key Information in SPECS.md
+
+- **Project Overview**: Web-based application for monitoring Hyperliquid market data and triggering alerts.
+- **Technical Stack**: Nuxt 4, Nuxt UI (Fuchsia theme), Tailwind CSS, Supabase, Hyperliquid SDK (`@nktkas/hyperliquid`), TanStack Query, Pinia.
+- **Core Features**: Dashboard with monitored pairs, Pair Analysis with charts, Asset Management (admin only), User Authentication & Profile.
+- **Database Schema**: Details for `profiles`, `user_system`, `user_subscriptions`, `monitored_pairs`, `trends`, and `notification_history` tables.
+- **System Architecture**: Market data layer, trend engine, server-side workers, and persistence layer.
+
+## Code rules
+
+- Add the .js extension to imports when appropriate except in vue files
+- Remove unused imports
+- Never use the `any` type
+- Never cast using `as`
+- Use `~~shared` alias for imports from the shared directory instead of `#shared`
+
+## Behaviour
+
+- Write migration files if necessary
+- Never try to run or write tests
+
+## Type Safety
+
+Always rely on types defined in `database.types.ts` and `database.friendly.types.ts` files whenever possible to ensure consistency with the Supabase schema.
+
+- `app/types/database.types.ts`: Core database schema types.
+- `app/types/database.friendly.types.ts`: Higher-level types derived from the database schema.
+
+Use the `Tables`, `TablesInsert`, `TablesUpdate`, and `Enums` helper types from `database.types.ts` to build your friendly types if needed.
+
+When implementing new features or modifying existing ones, ensure they align with the specifications defined in `SPECS.md`.
