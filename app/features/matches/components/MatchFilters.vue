@@ -18,6 +18,7 @@ watch(() => props.modelValue, (newVal) => {
     || newVal.sport_id !== filters.value.sport_id
     || newVal.category_id !== filters.value.category_id
     || newVal.tournament_id !== filters.value.tournament_id
+    || newVal.has_outcomes !== filters.value.has_outcomes
   ) {
     filters.value = { ...newVal }
   }
@@ -99,46 +100,56 @@ function resetFilters() {
     sport_id: null,
     category_id: null,
     tournament_id: null,
-    search: ''
+    search: '',
+    has_outcomes: true
   }
 }
 </script>
 
 <template>
-  <div class="flex flex-col md:flex-row gap-4 mb-4">
-    <UInput
-      v-model="filters.search"
-      icon="i-lucide-search"
-      placeholder="Search match title..."
-      class="flex-1"
-    />
+  <div class="flex flex-col gap-4 mb-4">
+    <div class="flex flex-col md:flex-row gap-4">
+      <UInput
+        v-model="filters.search"
+        icon="i-lucide-search"
+        placeholder="Search match title..."
+        class="flex-1"
+      />
 
-    <USelect
-      v-model="filters.sport_id"
-      :items="sportOptions"
-      class="w-full md:w-48"
-    />
+      <USelect
+        v-model="filters.sport_id"
+        :items="sportOptions"
+        class="w-full md:w-48"
+      />
 
-    <USelect
-      v-model="filters.category_id"
-      :items="categoryOptions"
-      :disabled="!filters.sport_id"
-      class="w-full md:w-48"
-    />
+      <USelect
+        v-model="filters.category_id"
+        :items="categoryOptions"
+        :disabled="!filters.sport_id"
+        class="w-full md:w-48"
+      />
 
-    <USelect
-      v-model="filters.tournament_id"
-      :items="tournamentOptions"
-      :disabled="!filters.category_id"
-      class="w-full md:w-48"
-    />
+      <USelect
+        v-model="filters.tournament_id"
+        :items="tournamentOptions"
+        :disabled="!filters.category_id"
+        class="w-full md:w-48"
+      />
 
-    <UButton
-      v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search"
-      icon="i-lucide-x"
-      color="neutral"
-      variant="ghost"
-      @click="resetFilters"
-    />
+      <UButton
+        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || !filters.has_outcomes"
+        icon="i-lucide-x"
+        color="neutral"
+        variant="ghost"
+        @click="resetFilters"
+      />
+    </div>
+
+    <div class="flex items-center gap-2">
+      <UCheckbox
+        v-model="filters.has_outcomes"
+        label="Show only matches with outcomes"
+      />
+    </div>
   </div>
 </template>

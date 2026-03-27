@@ -7,7 +7,8 @@ const filters = ref<MatchFilters>({
   sport_id: null,
   tournament_id: null,
   category_id: null,
-  search: ''
+  search: '',
+  has_outcomes: true
 })
 
 const page = ref(1)
@@ -38,6 +39,10 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
 
   if (filters.value.search) {
     query = query.ilike('title', `%${filters.value.search}%`)
+  }
+
+  if (filters.value.has_outcomes) {
+    query = query.not('main_bet_id', 'is', null)
   }
 
   const start = (page.value - 1) * itemsPerPage
