@@ -20,7 +20,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 ## 3. Core Features
 
 ### 3.1 Market Structure & Live Data Grabber
-- **Endpoint**: `GET /api/live` (Note: `/api/structure` is not needed as it's part of this endpoint)
+- **Endpoint**: `GET /api/live`
 - **Functionality**:
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
   - Retrieves the market structure (sports, categories, tournaments, filters, bet categories) and match data.
@@ -28,7 +28,13 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
   - Uses object keys from the source as primary keys in the database.
 
-### 3.2 Main Page (Match List)
+### 3.2 Data Cleanup
+- **Endpoint**: `GET /api/cleanup`
+- **Functionality**:
+  - Deletes matches from `winamax_matches` that started more than 24 hours ago.
+  - Relies on database-level `ON DELETE CASCADE` to remove associated bets, outcomes, and odds history.
+
+### 3.3 Main Page (Match List)
 - **Features**:
   - Displays a list of matches ordered by `match_start` descending.
   - Filtering: Users can filter matches by sport, tournament, or category.

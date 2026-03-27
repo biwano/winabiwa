@@ -1,16 +1,16 @@
-export type Json
-  = | string
-    | number
-    | boolean
-    | null
-    | { [key: string]: Json | undefined }
-    | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: '14.4'
+    PostgrestVersion: "14.4"
   }
   graphql_public: {
     Tables: {
@@ -87,12 +87,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_bet_filters_parent_id_fkey'
-            columns: ['parent_id']
+            foreignKeyName: "winamax_bet_filters_parent_id_fkey"
+            columns: ["parent_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_bet_filters'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_bet_filters"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_bets: {
@@ -122,19 +122,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_bets_bet_type_category_id_fkey'
-            columns: ['bet_type_category_id']
+            foreignKeyName: "winamax_bets_bet_type_category_id_fkey"
+            columns: ["bet_type_category_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_bet_categories'
-            referencedColumns: ['id']
+            referencedRelation: "winamax_bet_categories"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'winamax_bets_match_id_fkey'
-            columns: ['match_id']
+            foreignKeyName: "winamax_bets_match_id_fkey"
+            columns: ["match_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_matches'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_matches"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_categories: {
@@ -161,12 +161,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_categories_sport_id_fkey'
-            columns: ['sport_id']
+            foreignKeyName: "winamax_categories_sport_id_fkey"
+            columns: ["sport_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_sports'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_sports"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_matches: {
@@ -217,33 +217,33 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_matches_category_id_fkey'
-            columns: ['category_id']
+            foreignKeyName: "winamax_matches_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_categories'
-            referencedColumns: ['id']
+            referencedRelation: "winamax_categories"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'winamax_matches_main_bet_id_fkey'
-            columns: ['main_bet_id']
+            foreignKeyName: "winamax_matches_main_bet_id_fkey"
+            columns: ["main_bet_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_bets'
-            referencedColumns: ['id']
+            referencedRelation: "winamax_bets"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'winamax_matches_sport_id_fkey'
-            columns: ['sport_id']
+            foreignKeyName: "winamax_matches_sport_id_fkey"
+            columns: ["sport_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_sports'
-            referencedColumns: ['id']
+            referencedRelation: "winamax_sports"
+            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: 'winamax_matches_tournament_id_fkey'
-            columns: ['tournament_id']
+            foreignKeyName: "winamax_matches_tournament_id_fkey"
+            columns: ["tournament_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_tournaments'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_tournaments"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_odds_history: {
@@ -264,12 +264,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_odds_history_outcome_id_fkey'
-            columns: ['outcome_id']
+            foreignKeyName: "winamax_odds_history_outcome_id_fkey"
+            columns: ["outcome_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_outcomes'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_outcomes"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_outcomes: {
@@ -296,12 +296,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_outcomes_bet_id_fkey'
-            columns: ['bet_id']
+            foreignKeyName: "winamax_outcomes_bet_id_fkey"
+            columns: ["bet_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_bets'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_bets"
+            referencedColumns: ["id"]
+          },
         ]
       }
       winamax_sports: {
@@ -349,12 +349,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: 'winamax_tournaments_category_id_fkey'
-            columns: ['category_id']
+            foreignKeyName: "winamax_tournaments_category_id_fkey"
+            columns: ["category_id"]
             isOneToOne: false
-            referencedRelation: 'winamax_categories'
-            referencedColumns: ['id']
-          }
+            referencedRelation: "winamax_categories"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -373,128 +373,128 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-      & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
-    : never = never
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    & DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-      ? R
-      : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables']
-    & DefaultSchema['Views'])
-    ? (DefaultSchema['Tables']
-      & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
-        ? R
-        : never
+      ? R
+      : never
     : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema['Tables']
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
-    Insert: infer I
-  }
-    ? I
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
       ? I
       : never
     : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema['Tables']
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
-    : never = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
-    Update: infer U
-  }
-    ? U
-    : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
-    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
       ? U
       : never
     : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema['Enums']
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
-    : never = never
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
-    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema['CompositeTypes']
-  | { schema: keyof DatabaseWithoutInternals },
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
-    : never = never
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
-    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   graphql_public: {
-    Enums: {}
+    Enums: {},
   },
   public: {
-    Enums: {}
-  }
+    Enums: {},
+  },
 } as const
