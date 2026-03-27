@@ -13,13 +13,7 @@ const filters = ref<MatchFilters>({ ...props.modelValue })
 
 // Sync local state when prop changes
 watch(() => props.modelValue, (newVal) => {
-  if (
-    newVal.search !== filters.value.search
-    || newVal.sport_id !== filters.value.sport_id
-    || newVal.category_id !== filters.value.category_id
-    || newVal.tournament_id !== filters.value.tournament_id
-    || newVal.has_outcomes !== filters.value.has_outcomes
-  ) {
+  if (JSON.stringify(newVal) !== JSON.stringify(filters.value)) {
     filters.value = { ...newVal }
   }
 }, { deep: true })
@@ -46,8 +40,8 @@ sports.value = sportsData.value || []
 watch(() => filters.value.sport_id, async (sportId) => {
   if (!sportId) {
     categories.value = []
-    filters.value.category_id = null
-    filters.value.tournament_id = null
+    if (filters.value.category_id !== null) filters.value.category_id = null
+    if (filters.value.tournament_id !== null) filters.value.tournament_id = null
     return
   }
 
@@ -58,15 +52,21 @@ watch(() => filters.value.sport_id, async (sportId) => {
     .order('name')
 
   categories.value = data || []
-  filters.value.category_id = null
-  filters.value.tournament_id = null
+
+  // Reset category and tournament only if the current category doesn't belong to the new sport
+  // and if it's not being synced from the parent prop
+  const currentCategoryIsValid = categories.value.some(c => c.id === filters.value.category_id)
+  if (!currentCategoryIsValid && filters.value.category_id !== props.modelValue.category_id) {
+    filters.value.category_id = null
+    filters.value.tournament_id = null
+  }
 }, { immediate: true })
 
 // Fetch tournaments based on selected category
 watch(() => filters.value.category_id, async (categoryId) => {
   if (!categoryId) {
     tournaments.value = []
-    filters.value.tournament_id = null
+    if (filters.value.tournament_id !== null) filters.value.tournament_id = null
     return
   }
 
@@ -77,7 +77,13 @@ watch(() => filters.value.category_id, async (categoryId) => {
     .order('name')
 
   tournaments.value = data || []
-  filters.value.tournament_id = null
+
+  // Reset tournament only if the current tournament doesn't belong to the new category
+  // and if it's not being synced from the parent prop
+  const currentTournamentIsValid = tournaments.value.some(t => t.id === filters.value.tournament_id)
+  if (!currentTournamentIsValid && filters.value.tournament_id !== props.modelValue.tournament_id) {
+    filters.value.tournament_id = null
+  }
 }, { immediate: true })
 
 const sportOptions = computed(() => [

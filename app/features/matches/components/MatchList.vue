@@ -3,20 +3,80 @@ import type { WinamaxMatch, MatchFilters } from '~~/app/types/database.friendly.
 
 const client = useSupabaseClient()
 
-const filters = ref<MatchFilters>({
-  sport_id: null,
-  tournament_id: null,
-  category_id: null,
-  search: '',
-  has_outcomes: true
-})
+const route = useRoute()
+const router = useRouter()
 
-const page = ref(1)
+function getInitialFilters(): MatchFilters {
+  return {
+    sport_id: route.query.sport_id ? Number(route.query.sport_id) : null,
+    category_id: route.query.category_id ? Number(route.query.category_id) : null,
+    tournament_id: route.query.tournament_id ? Number(route.query.tournament_id) : null,
+    search: (route.query.search as string) || '',
+    has_outcomes: route.query.has_outcomes === undefined ? true : route.query.has_outcomes === 'true'
+  }
+}
+
+const filters = ref<MatchFilters>(getInitialFilters())
+const page = ref(route.query.page ? Number(route.query.page) : 1)
 const itemsPerPage = 10
 
-// Reset page to 1 when filters change
-watch(filters, () => {
-  page.value = 1
+// Sync URL query when filters or page change
+watch([filters, page], ([newFilters, newPage]) => {
+  const query: Record<string, string | number | undefined> = {}
+
+  if (newFilters.sport_id) query.sport_id = newFilters.sport_id
+  if (newFilters.category_id) query.category_id = newFilters.category_id
+  if (newFilters.tournament_id) query.tournament_id = newFilters.tournament_id
+  if (newFilters.search) query.search = newFilters.search
+  // Only add has_outcomes to query if it's NOT the default (true)
+  if (newFilters.has_outcomes === false) query.has_outcomes = 'false'
+  if (newPage > 1) query.page = newPage
+
+  // Only push if the query has actually changed to avoid redundant history entries
+  const currentQuery = { ...route.query }
+  const nextQuery = { ...query }
+
+  // Compare keys and values
+  const hasChanged = Object.keys(nextQuery).length !== Object.keys(currentQuery).length
+    || Object.entries(nextQuery).some(([key, value]) => String(currentQuery[key]) !== String(value))
+
+  if (hasChanged) {
+    router.push({ query })
+  }
+}, { deep: true })
+
+// Sync local state when URL query changes (e.g. back/forward button)
+watch(() => route.query, (newQuery) => {
+  const newFilters = {
+    sport_id: newQuery.sport_id ? Number(newQuery.sport_id) : null,
+    category_id: newQuery.category_id ? Number(newQuery.category_id) : null,
+    tournament_id: newQuery.tournament_id ? Number(newQuery.tournament_id) : null,
+    search: (newQuery.search as string) || '',
+    has_outcomes: newQuery.has_outcomes === undefined ? true : newQuery.has_outcomes === 'true'
+  }
+
+  const newPage = newQuery.page ? Number(newQuery.page) : 1
+
+  // Update only if different to avoid infinite loops
+  if (JSON.stringify(newFilters) !== JSON.stringify(filters.value)) {
+    filters.value = newFilters
+  }
+  if (newPage !== page.value) {
+    page.value = newPage
+  }
+}, { deep: true })
+
+// Reset page to 1 when filters change (unless the change came from the URL sync)
+watch(filters, (newVal, oldVal) => {
+  if (JSON.stringify(newVal) !== JSON.stringify(oldVal)) {
+    // If the filters changed but the page didn't (meaning it's a filter change, not a URL sync that included a page)
+    // and if the current query page is the same as the current page ref, reset to 1
+    if (page.value !== 1 && route.query.page && Number(route.query.page) === page.value) {
+      page.value = 1
+    } else if (page.value !== 1 && !route.query.page) {
+      page.value = 1
+    }
+  }
 }, { deep: true })
 
 const { data: matchesData, pending } = await useAsyncData('matches', async () => {

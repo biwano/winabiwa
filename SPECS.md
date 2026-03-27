@@ -39,6 +39,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Displays a list of matches ordered by `match_start` descending.
   - Filtering: Users can filter matches by sport, tournament, or category.
   - Outcome Filtering: A toggle to show only matches that have at least one outcome. This filter is enabled by default.
+  - URL Synchronization: All filters (sport, category, tournament, search, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
 
