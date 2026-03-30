@@ -42,6 +42,12 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - URL Synchronization: All filters (sport, category, tournament, search, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
+  - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
+    - Renders using `div` and flexbox only (not `UTable`).
+    - Each match card displays:
+      - First line: Match name and Sport badge.
+      - Second line: Start time and Status badge.
+  - **Desktop View**: On larger screens, a `MatchTableDesktop` component is used for a standard tabular view.
 
 ### 3.3 Match Details (Side Panel)
 - **Features**:
