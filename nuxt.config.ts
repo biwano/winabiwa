@@ -5,14 +5,14 @@ export default defineNuxtConfig({
     '@nuxt/ui',
     '@nuxtjs/supabase'
   ],
-
-  devtools: {
-    enabled: true
-  },
   components: [
     { path: '~/features', prefix: '', extensions: ['vue'], pathPrefix: false },
     '~/components'
   ],
+
+  devtools: {
+    enabled: true
+  },
   css: ['~/assets/css/main.css'],
 
   routeRules: {

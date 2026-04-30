@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
     const threshold = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
 
     // Delete matches older than 24 hours
-    const { data, error, count } = await client
+    const { error, count } = await client
       .from('winamax_matches')
       .delete({ count: 'exact' })
       .lt('match_start', threshold)

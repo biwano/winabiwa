@@ -26,12 +26,20 @@ const props = defineProps<{
   title?: string
 }>()
 
+type TooltipPoint = [number, number | string]
+
+type TooltipParam = {
+  value: TooltipPoint
+  marker: string
+  seriesName: string
+}
+
 const option = computed(() => {
   const sortedHistory = [...props.oddsHistory].sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
 
-  const series = props.outcomes.map(outcome => {
+  const series = props.outcomes.map((outcome) => {
     const data = sortedHistory
       .filter(item => item.outcome_id === outcome.id)
       .map(item => [new Date(item.timestamp).getTime(), item.value])
@@ -57,10 +65,12 @@ const option = computed(() => {
     },
     tooltip: {
       trigger: 'axis',
-      formatter: (params: any[]) => {
+      formatter: (params: TooltipParam[]) => {
         if (!params || params.length === 0) return ''
-        let result = `${new Date(params[0].value[0]).toLocaleString()}<br/>`
-        params.forEach(param => {
+        const firstParam = params[0]
+        if (!firstParam) return ''
+        let result = `${new Date(firstParam.value[0]).toLocaleString()}<br/>`
+        params.forEach((param) => {
           result += `${param.marker} ${param.seriesName}: <b>${param.value[1]}</b><br/>`
         })
         return result

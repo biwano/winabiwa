@@ -3,16 +3,16 @@
  * Replicates the logic used in Socket.io/Engine.io.
  */
 
-const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'.split('');
-const length = alphabet.length;
-const map: Record<string, number> = {};
+const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_'.split('')
+const length = alphabet.length
+const map: Record<string, number> = {}
 
-let seed = 0;
-let prev: string = '';
+let seed = 0
+let prev: string = ''
 
 alphabet.forEach((char, index) => {
-  map[char] = index;
-});
+  map[char] = index
+})
 
 /**
  * Encode the given number into a yeast ID.
@@ -21,14 +21,14 @@ alphabet.forEach((char, index) => {
  * @returns {String} The encoded yeast ID.
  */
 export function encode(num: number): string {
-  let encoded = '';
+  let encoded = ''
 
   do {
-    encoded = alphabet[num % length] + encoded;
-    num = Math.floor(num / length);
-  } while (num > 0);
+    encoded = alphabet[num % length] + encoded
+    num = Math.floor(num / length)
+  } while (num > 0)
 
-  return encoded;
+  return encoded
 }
 
 /**
@@ -37,13 +37,13 @@ export function encode(num: number): string {
  * @returns {String} The unique ID.
  */
 export function yeast(): string {
-  const now = encode(Date.now());
+  const now = encode(Date.now())
 
   if (now !== prev) {
-    seed = 0;
-    prev = now;
-    return now;
+    seed = 0
+    prev = now
+    return now
   }
 
-  return now + '.' + encode(seed++);
+  return now + '.' + encode(seed++)
 }

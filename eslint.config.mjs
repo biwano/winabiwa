@@ -3,6 +3,18 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt({
   rules: {
+    'no-console': [
+      'error',
+      {
+        allow: [
+          'warn',
+          'error',
+          'info',
+          'debug',
+          'trace'
+        ]
+      }
+    ],
     'import/extensions': [
       'error',
       'always',
@@ -15,5 +27,11 @@ export default withNuxt({
       }
     ]
   },
-  ignores: ['/app/**/*.vue']
+  ignores: [
+    '.nuxt/**',
+    '.output/**',
+    '.nitro/**',
+    'dist/**',
+    'node_modules/**'
+  ]
 })
