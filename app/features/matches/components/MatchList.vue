@@ -191,6 +191,10 @@ function openDetails(match: WinamaxMatch) {
       @open-details="openDetails"
     />
 
+    <p class="text-sm text-gray-500">
+      Total filtered matches: {{ matchesData?.count || 0 }}
+    </p>
+
     <div
       v-if="totalPages > 1"
       class="flex justify-center mt-6"

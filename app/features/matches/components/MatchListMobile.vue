@@ -54,7 +54,7 @@ function getFormattedDate(dateStr: string) {
               </UBadge>
             </div>
 
-            <!-- Line 2: Start time, score and status -->
+            <!-- Line 2: Start time, score, status and tags -->
             <div class="flex justify-between items-center text-xs text-gray-500 gap-2">
               <span class="truncate flex-1 min-w-0">
                 {{ getFormattedDate(match.match_start || '') }}
@@ -62,14 +62,32 @@ function getFormattedDate(dateStr: string) {
               <span class="font-medium text-gray-700 dark:text-gray-200 flex-shrink-0">
                 {{ match.score || '-' }}
               </span>
-              <UBadge
-                :color="match.status === 'LIVE' ? 'error' : 'neutral'"
-                variant="solid"
-                size="sm"
-                class="flex-shrink-0"
-              >
-                {{ match.status }}
-              </UBadge>
+              <div class="flex items-center gap-1 flex-shrink-0">
+                <UBadge
+                  :color="match.status === 'LIVE' ? 'error' : 'neutral'"
+                  variant="solid"
+                  size="sm"
+                >
+                  {{ match.status }}
+                </UBadge>
+                <template v-if="match.tags && match.tags.length > 0">
+                  <UBadge
+                    v-for="tag in match.tags"
+                    :key="tag.id"
+                    size="sm"
+                    color="primary"
+                    variant="subtle"
+                  >
+                    {{ tag.code }}
+                  </UBadge>
+                </template>
+                <span
+                  v-else
+                  class="text-gray-400"
+                >
+                  -
+                </span>
+              </div>
             </div>
           </div>
         </div>
