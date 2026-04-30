@@ -37,7 +37,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 ### 3.2 Data Cleanup
 - **Endpoint**: `GET /api/cleanup`
 - **Functionality**:
-  - Deletes matches from `winamax_matches` that started more than 24 hours ago.
+  - Deletes matches from `winamax_matches` that started more than 3 hours ago.
   - Relies on database-level `ON DELETE CASCADE` to remove associated bets, outcomes, and odds history.
 
 ### 3.3 Main Page (Match List)
@@ -55,7 +55,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - Renders using `div` and flexbox only (not `UTable`).
     - Each match card displays:
       - First line: Match name and Sport badge.
-      - Second line: Start time and Status badge.
+      - Second line: Start time, score, and Status badge.
   - **Desktop View**: On larger screens, a `MatchTableDesktop` component is used for a standard tabular view.
 
 ### 3.3 Match Details (Side Panel)
@@ -64,6 +64,30 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Uses data from the `winamax_odds_history` table.
+
+### 3.4 Assistant (Automatic Match Tagging)
+- **Endpoint**: `GET /api/assistant/run`
+- **Goal**:
+  - Analyze all live matches and automatically assign tags when predefined market/score conditions are met.
+- **Execution**:
+  - The endpoint processes matches where `status = "LIVE"`.
+  - The endpoint is designed to be manually triggerable and scheduler-compatible (cron/job runner).
+- **Current Rule Set (v1)**:
+  - Rule name: `SIEGE`.
+  - Condition:
+    - Match score is exactly `0:0`.
+    - The favorite's odd has dropped by at least `0.10` (example: `1.70` to `1.60`).
+    - The drop happens within less than `5` minutes.
+  - Action:
+    - Add the `SIEGE` tag to the match.
+- **Idempotency**:
+  - A match can have multiple tags.
+  - The same tag must not be duplicated for the same match.
+- **Observability**:
+  - The endpoint returns a summary including:
+    - Number of live matches analyzed.
+    - Number of matches tagged.
+    - Number of tags created (or already existing/no-op).
 
 ## 4. Database Schema
 
@@ -82,7 +106,21 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - `competitor2_id`: BigInt
   - `competitor2_name`: Text
   - `main_bet_id`: BigInt (Nullable)
+  - `score`: Text (Nullable, expected format such as `0-0`)
   - `updated_at`: Timestamp with timezone
+
+- **`match_tags`**:
+  - `id`: BigInt (Primary Key, generated identity)
+  - `code`: Text (Unique, example: `SIEGE`)
+  - `label`: Text (Human-readable name)
+  - `description`: Text (Nullable)
+  - `created_at`: Timestamp with timezone
+  - `updated_at`: Timestamp with timezone
+
+- **`winamax_match_tags`** (join table, many-to-many):
+  - `match_id`: BigInt (Primary Key, Foreign Key to `winamax_matches`)
+  - `tag_id`: BigInt (Primary Key, Foreign Key to `match_tags`)
+  - `created_at`: Timestamp with timezone
 
 - **`winamax_bets`**:
   - `id`: BigInt (Primary Key)

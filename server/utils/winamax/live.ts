@@ -2,7 +2,6 @@ import { yeast } from '../yeast.js'
 
 interface WinamaxEntity {
   id?: number
-  [key: string]: unknown
 }
 
 export interface WinamaxSport extends WinamaxEntity {
@@ -36,6 +35,7 @@ export interface WinamaxMatch extends WinamaxEntity {
   competitor2Id: number
   competitor2Name: string
   mainBetId?: number
+  score?: string
 }
 
 export interface WinamaxBet extends WinamaxEntity {

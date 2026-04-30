@@ -39,6 +39,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      match_tags: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          id: number
+          label: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          label: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          id?: number
+          label?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       winamax_bet_categories: {
         Row: {
           display_order: number | null
@@ -179,6 +206,7 @@ export type Database = {
           id: number
           main_bet_id: number | null
           match_start: string | null
+          score: string | null
           sport_id: number | null
           status: string | null
           title: string | null
@@ -194,6 +222,7 @@ export type Database = {
           id: number
           main_bet_id?: number | null
           match_start?: string | null
+          score?: string | null
           sport_id?: number | null
           status?: string | null
           title?: string | null
@@ -209,6 +238,7 @@ export type Database = {
           id?: number
           main_bet_id?: number | null
           match_start?: string | null
+          score?: string | null
           sport_id?: number | null
           status?: string | null
           title?: string | null
@@ -242,6 +272,39 @@ export type Database = {
             columns: ['tournament_id']
             isOneToOne: false
             referencedRelation: 'winamax_tournaments'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      winamax_match_tags: {
+        Row: {
+          created_at: string
+          match_id: number
+          tag_id: number
+        }
+        Insert: {
+          created_at?: string
+          match_id: number
+          tag_id: number
+        }
+        Update: {
+          created_at?: string
+          match_id?: number
+          tag_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'winamax_match_tags_match_id_fkey'
+            columns: ['match_id']
+            isOneToOne: false
+            referencedRelation: 'winamax_matches'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'winamax_match_tags_tag_id_fkey'
+            columns: ['tag_id']
+            isOneToOne: false
+            referencedRelation: 'match_tags'
             referencedColumns: ['id']
           }
         ]

@@ -54,10 +54,13 @@ function getFormattedDate(dateStr: string) {
               </UBadge>
             </div>
 
-            <!-- Line 2: Start time and Status -->
+            <!-- Line 2: Start time, score and status -->
             <div class="flex justify-between items-center text-xs text-gray-500 gap-2">
               <span class="truncate flex-1 min-w-0">
                 {{ getFormattedDate(match.match_start || '') }}
+              </span>
+              <span class="font-medium text-gray-700 dark:text-gray-200 flex-shrink-0">
+                {{ match.score || '-' }}
               </span>
               <UBadge
                 :color="match.status === 'LIVE' ? 'error' : 'neutral'"

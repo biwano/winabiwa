@@ -25,6 +25,13 @@ export default withNuxt({
         tsx: 'always',
         vue: 'always'
       }
+    ],
+    'no-restricted-syntax': [
+      'error',
+      {
+        selector: 'TSIndexSignature > TSTypeAnnotation > TSUnknownKeyword',
+        message: 'Do not use unknown for index signatures. Use a specific value type.'
+      }
     ]
   },
   ignores: [

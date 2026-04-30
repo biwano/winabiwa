@@ -1,6 +1,7 @@
 import {
   fetchWinamaxLiveData,
-  type WinamaxLiveTarget
+  type WinamaxLiveTarget,
+  type WinamaxMatch
 } from '../../utils/winamax/live.js'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import type { PostgrestError } from '@supabase/supabase-js'
@@ -201,6 +202,7 @@ export default defineEventHandler(async (event) => {
           competitor1_name: match.competitor1Name,
           competitor2_id: match.competitor2Id,
           competitor2_name: match.competitor2Name,
+          score: match.score || null,
           updated_at: now
         })
       }

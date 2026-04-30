@@ -14,6 +14,7 @@ const columns = [
   { accessorKey: 'title', header: 'Match', id: 'title' },
   { accessorKey: 'sport', header: 'Sport', id: 'sport' },
   { accessorKey: 'tournament', header: 'Tournament', id: 'tournament' },
+  { accessorKey: 'score', header: 'Score', id: 'score' },
   { accessorKey: 'match_start', header: 'Start Time', id: 'match_start' },
   { accessorKey: 'status', header: 'Status', id: 'status' }
 ]
@@ -52,6 +53,12 @@ function getFormattedDate(dateStr: string) {
     <template #tournament-cell="{ row }">
       <span class="text-sm text-gray-500">
         {{ row.original.tournament?.name }}
+      </span>
+    </template>
+
+    <template #score-cell="{ row }">
+      <span class="text-sm text-gray-500">
+        {{ row.original.score || '-' }}
       </span>
     </template>
 

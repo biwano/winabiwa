@@ -3,11 +3,14 @@ import type { Tables } from './database.types'
 export type WinamaxSport = Tables<'winamax_sports'>
 export type WinamaxCategory = Tables<'winamax_categories'>
 export type WinamaxTournament = Tables<'winamax_tournaments'>
+export type MatchTag = Tables<'match_tags'>
+export type WinamaxMatchTag = Tables<'winamax_match_tags'>
 export type WinamaxMatch = Tables<'winamax_matches'> & {
   sport?: WinamaxSport | null
   category?: WinamaxCategory | null
   tournament?: WinamaxTournament | null
   main_bet?: WinamaxBet | null
+  tags?: MatchTag[]
 }
 export type WinamaxBet = Tables<'winamax_bets'> & {
   outcomes?: WinamaxOutcome[]
