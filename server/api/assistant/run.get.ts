@@ -4,12 +4,14 @@ import type { Database } from '../../../app/types/database.types.js'
 
 const SIEGE_TAG_CODE = 'SIEGE'
 const TIRED_TAG_CODE = 'TIRED'
-type RuleCode = typeof SIEGE_TAG_CODE | typeof TIRED_TAG_CODE
+const REVERSAL_TAG_CODE = 'REVERSAL'
+type RuleCode = typeof SIEGE_TAG_CODE | typeof TIRED_TAG_CODE | typeof REVERSAL_TAG_CODE
 const SIEGE_TARGET_SCORE = '0:0'
 const SIEGE_MIN_DROP = 0.1
 const SIEGE_WINDOW_MS = 5 * 60 * 1000
 const TIRED_MIN_DROP_RATIO = 0.08
 const TIRED_WINDOW_MS = 10 * 60 * 1000
+const REVERSAL_MAX_FAVORITE_ODD = 2.5
 const MAX_RULE_WINDOW_MS = Math.max(SIEGE_WINDOW_MS, TIRED_WINDOW_MS)
 
 interface RuleTag {
@@ -18,22 +20,27 @@ interface RuleTag {
 
 const RULE_TAGS: RuleTag[] = [
   { code: SIEGE_TAG_CODE },
-  { code: TIRED_TAG_CODE }
+  { code: TIRED_TAG_CODE },
+  { code: REVERSAL_TAG_CODE }
 ]
 
 function isRuleCode(value: string): value is RuleCode {
-  return value === SIEGE_TAG_CODE || value === TIRED_TAG_CODE
+  return value === SIEGE_TAG_CODE || value === TIRED_TAG_CODE || value === REVERSAL_TAG_CODE
 }
 
 interface MatchRow {
   id: number
   main_bet_id: number | null
   score: string | null
+  competitor1_name: string | null
+  competitor2_name: string | null
 }
 
 interface OutcomeRow {
   id: number
   bet_id: number
+  label: string | null
+  code: string | null
 }
 
 interface OddRow {
@@ -44,6 +51,7 @@ interface OddRow {
 
 interface LiveDataContext {
   liveMatches: MatchRow[]
+  outcomesById: Map<number, OutcomeRow>
   outcomesByBet: Map<number, number[]>
   oddsByOutcome: Map<number, OddRow[]>
 }
@@ -160,13 +168,108 @@ function pickFavoriteAndOutsiderOutcomeIds(
   return { favoriteOutcomeId, outsiderOutcomeId }
 }
 
+interface ParsedScore {
+  home: number
+  away: number
+}
+
+type MatchSide = 'home' | 'away' | 'draw'
+
+function parseScore(score: string | null): ParsedScore | null {
+  if (!score) {
+    return null
+  }
+
+  const normalizedScore = score.trim()
+  const scoreMatch = normalizedScore.match(/^(\d+)\s*[:-]\s*(\d+)$/)
+  if (!scoreMatch) {
+    return null
+  }
+
+  const home = Number(scoreMatch[1])
+  const away = Number(scoreMatch[2])
+  if (Number.isNaN(home) || Number.isNaN(away)) {
+    return null
+  }
+
+  return { home, away }
+}
+
+function normalizeValue(value: string | null): string {
+  return (value || '').trim().toLowerCase()
+}
+
+function sideFromOutcome(outcome: OutcomeRow): MatchSide | null {
+  const normalizedCode = normalizeValue(outcome.code)
+  if (normalizedCode === '1' || normalizedCode === 'home' || normalizedCode === 'h') {
+    return 'home'
+  }
+  if (normalizedCode === '2' || normalizedCode === 'away' || normalizedCode === 'a') {
+    return 'away'
+  }
+  if (normalizedCode === 'x' || normalizedCode === 'n' || normalizedCode === 'draw') {
+    return 'draw'
+  }
+
+  const normalizedLabel = normalizeValue(outcome.label)
+  if (
+    normalizedLabel === '1'
+    || normalizedLabel === 'team 1'
+    || normalizedLabel === 'home'
+    || normalizedLabel === 'domicile'
+    || normalizedLabel === 'equipe 1'
+  ) {
+    return 'home'
+  }
+  if (
+    normalizedLabel === '2'
+    || normalizedLabel === 'team 2'
+    || normalizedLabel === 'away'
+    || normalizedLabel === 'exterieur'
+    || normalizedLabel === 'extérieur'
+    || normalizedLabel === 'equipe 2'
+  ) {
+    return 'away'
+  }
+  if (
+    normalizedLabel === 'x'
+    || normalizedLabel === 'n'
+    || normalizedLabel === 'draw'
+    || normalizedLabel === 'nul'
+  ) {
+    return 'draw'
+  }
+
+  return null
+}
+
+function resolveOutcomeSideForMatch(outcome: OutcomeRow, match: MatchRow): MatchSide | null {
+  const directSide = sideFromOutcome(outcome)
+  if (directSide !== null) {
+    return directSide
+  }
+
+  const normalizedLabel = normalizeValue(outcome.label)
+  const homeName = normalizeValue(match.competitor1_name)
+  const awayName = normalizeValue(match.competitor2_name)
+
+  if (homeName && normalizedLabel.includes(homeName) && (!awayName || !normalizedLabel.includes(awayName))) {
+    return 'home'
+  }
+  if (awayName && normalizedLabel.includes(awayName) && (!homeName || !normalizedLabel.includes(homeName))) {
+    return 'away'
+  }
+
+  return null
+}
+
 async function fetchLiveDataContext(
   client: SupabaseClient<Database>,
   now: Date
 ): Promise<LiveDataContext> {
   const { data: liveMatches, error: liveMatchesError } = await client
     .from('winamax_matches')
-    .select('id, main_bet_id, score')
+    .select('id, main_bet_id, score, competitor1_name, competitor2_name')
     .eq('status', 'LIVE')
     .not('main_bet_id', 'is', null)
 
@@ -180,7 +283,9 @@ async function fetchLiveDataContext(
   const liveMatchesRows: MatchRow[] = (liveMatches || []).map(match => ({
     id: match.id,
     main_bet_id: match.main_bet_id,
-    score: match.score
+    score: match.score,
+    competitor1_name: match.competitor1_name,
+    competitor2_name: match.competitor2_name
   }))
 
   const mainBetIds = Array.from(new Set(
@@ -192,6 +297,7 @@ async function fetchLiveDataContext(
   if (mainBetIds.length === 0) {
     return {
       liveMatches: liveMatchesRows,
+      outcomesById: new Map<number, OutcomeRow>(),
       outcomesByBet: new Map<number, number[]>(),
       oddsByOutcome: new Map<number, OddRow[]>()
     }
@@ -199,7 +305,7 @@ async function fetchLiveDataContext(
 
   const { data: outcomes, error: outcomesError } = await client
     .from('winamax_outcomes')
-    .select('id, bet_id')
+    .select('id, bet_id, label, code')
     .in('bet_id', mainBetIds)
 
   if (outcomesError) {
@@ -209,17 +315,24 @@ async function fetchLiveDataContext(
     })
   }
 
-  const outcomeRows: OutcomeRow[] = (outcomes || [])
-    .filter((outcome): outcome is { id: number, bet_id: number } => outcome.bet_id !== null)
-    .map(outcome => ({
+  const outcomeRows: OutcomeRow[] = []
+  for (const outcome of outcomes || []) {
+    if (outcome.bet_id === null) {
+      continue
+    }
+    outcomeRows.push({
       id: outcome.id,
-      bet_id: outcome.bet_id
-    }))
+      bet_id: outcome.bet_id,
+      label: outcome.label,
+      code: outcome.code
+    })
+  }
 
   const outcomeIds = outcomeRows.map(outcome => outcome.id)
   if (outcomeIds.length === 0) {
     return {
       liveMatches: liveMatchesRows,
+      outcomesById: new Map<number, OutcomeRow>(),
       outcomesByBet: new Map<number, number[]>(),
       oddsByOutcome: new Map<number, OddRow[]>()
     }
@@ -252,14 +365,17 @@ async function fetchLiveDataContext(
   }
 
   const outcomesByBet = new Map<number, number[]>()
+  const outcomesById = new Map<number, OutcomeRow>()
   for (const outcome of outcomeRows) {
     const rows = outcomesByBet.get(outcome.bet_id) || []
     rows.push(outcome.id)
     outcomesByBet.set(outcome.bet_id, rows)
+    outcomesById.set(outcome.id, outcome)
   }
 
   return {
     liveMatches: liveMatchesRows,
+    outcomesById,
     outcomesByBet,
     oddsByOutcome
   }
@@ -318,6 +434,51 @@ function analyzeTired(context: LiveDataContext): RuleAnalyzerResult {
   }
 }
 
+function analyzeReversal(context: LiveDataContext): RuleAnalyzerResult {
+  const matchIds = new Set<number>()
+
+  for (const match of context.liveMatches) {
+    if (match.main_bet_id === null) {
+      continue
+    }
+
+    const parsedScore = parseScore(match.score)
+    if (!parsedScore || parsedScore.home === parsedScore.away) {
+      continue
+    }
+
+    const outcomeIds = context.outcomesByBet.get(match.main_bet_id) || []
+    const { favoriteOutcomeId } = pickFavoriteAndOutsiderOutcomeIds(outcomeIds, context.oddsByOutcome)
+    if (favoriteOutcomeId === null) {
+      continue
+    }
+
+    const favoriteOutcome = context.outcomesById.get(favoriteOutcomeId)
+    if (!favoriteOutcome) {
+      continue
+    }
+
+    const favoriteHistory = context.oddsByOutcome.get(favoriteOutcomeId) || []
+    const favoriteLatest = favoriteHistory[favoriteHistory.length - 1]
+    if (!favoriteLatest || favoriteLatest.value >= REVERSAL_MAX_FAVORITE_ODD) {
+      continue
+    }
+
+    const favoriteSide = resolveOutcomeSideForMatch(favoriteOutcome, match)
+    if (favoriteSide === 'home' && parsedScore.home < parsedScore.away) {
+      matchIds.add(match.id)
+    }
+    if (favoriteSide === 'away' && parsedScore.away < parsedScore.home) {
+      matchIds.add(match.id)
+    }
+  }
+
+  return {
+    ruleCode: REVERSAL_TAG_CODE,
+    matchIds
+  }
+}
+
 export default defineEventHandler(async (event) => {
   try {
     const client = serverSupabaseServiceRole(event)
@@ -354,12 +515,14 @@ export default defineEventHandler(async (event) => {
     const context = await fetchLiveDataContext(client, now)
     const analyzerResults: RuleAnalyzerResult[] = [
       analyzeSiege(context),
-      analyzeTired(context)
+      analyzeTired(context),
+      analyzeReversal(context)
     ]
 
     const taggedByRule: Record<RuleCode, number> = {
       [SIEGE_TAG_CODE]: 0,
-      [TIRED_TAG_CODE]: 0
+      [TIRED_TAG_CODE]: 0,
+      [REVERSAL_TAG_CODE]: 0
     }
     const allTaggedMatchIds = new Set<number>()
     const linksToUpsert: Array<{ match_id: number, tag_id: number }> = []

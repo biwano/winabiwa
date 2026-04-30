@@ -81,7 +81,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - Building normalized in-memory structures (by match, by bet, by outcome) consumed by analyzers.
   - Rule analyzers must not query Supabase directly; they only receive prepared data context and return tag decisions.
   - Tag persistence (upsert in `winamax_match_tags`) remains centralized after all rule analyzers run.
-- **Rule Set (v1 + v2)**:
+- **Rule Set (v1 + v2 + v3)**:
   - Rule name: `SIEGE`.
   - Condition:
     - Match score is exactly `0:0`.
@@ -96,6 +96,12 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - Percent drop formula: `(older_odd - latest_odd) / older_odd`.
   - Action:
     - Add the `TIRED` tag to the match.
+  - Rule name: `REVERSAL`.
+  - Condition:
+    - The current score indicates that the favorite is losing the match.
+    - The favorite's latest odd remains under `2.5`.
+  - Action:
+    - Add the `REVERSAL` tag to the match.
 - **Idempotency**:
   - A match can have multiple tags.
   - The same tag must not be duplicated for the same match.
@@ -103,7 +109,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - The endpoint returns a summary including:
     - Number of live matches analyzed.
     - Number of matches tagged (global).
-    - Number of matches tagged per rule (`SIEGE`, `TIRED`, ...).
+    - Number of matches tagged per rule (`SIEGE`, `TIRED`, `REVERSAL`, ...).
     - Number of tags created (or already existing/no-op).
 
 ## 4. Database Schema
