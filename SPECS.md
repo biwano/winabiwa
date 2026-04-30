@@ -72,7 +72,16 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 - **Execution**:
   - The endpoint processes matches where `status = "LIVE"`.
   - The endpoint is designed to be manually triggerable and scheduler-compatible (cron/job runner).
-- **Current Rule Set (v1)**:
+- **Rule-Independent Analysis Pipeline (target refactor)**:
+  - The assistant route must have a dedicated, reusable data-loading layer independent from any single rule.
+  - The data-loading layer is responsible for:
+    - Fetching live matches.
+    - Fetching related markets/outcomes for each live match.
+    - Fetching odds history windows needed by rules.
+    - Building normalized in-memory structures (by match, by bet, by outcome) consumed by analyzers.
+  - Rule analyzers must not query Supabase directly; they only receive prepared data context and return tag decisions.
+  - Tag persistence (upsert in `winamax_match_tags`) remains centralized after all rule analyzers run.
+- **Rule Set (v1 + v2)**:
   - Rule name: `SIEGE`.
   - Condition:
     - Match score is exactly `0:0`.
@@ -80,13 +89,21 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - The drop happens within less than `5` minutes.
   - Action:
     - Add the `SIEGE` tag to the match.
+  - Rule name: `TIRED`.
+  - Condition:
+    - The outsider's odd drops by more than `8%`.
+    - The drop occurs within less than `10` minutes.
+    - Percent drop formula: `(older_odd - latest_odd) / older_odd`.
+  - Action:
+    - Add the `TIRED` tag to the match.
 - **Idempotency**:
   - A match can have multiple tags.
   - The same tag must not be duplicated for the same match.
 - **Observability**:
   - The endpoint returns a summary including:
     - Number of live matches analyzed.
-    - Number of matches tagged.
+    - Number of matches tagged (global).
+    - Number of matches tagged per rule (`SIEGE`, `TIRED`, ...).
     - Number of tags created (or already existing/no-op).
 
 ## 4. Database Schema
