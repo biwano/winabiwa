@@ -107,6 +107,7 @@ function resetFilters() {
     category_id: null,
     tournament_id: null,
     search: '',
+    live_only: false,
     has_outcomes: true
   }
 }
@@ -143,7 +144,7 @@ function resetFilters() {
       />
 
       <UButton
-        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || !filters.has_outcomes"
+        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || filters.live_only || !filters.has_outcomes"
         icon="i-lucide-x"
         color="neutral"
         variant="ghost"
@@ -152,6 +153,10 @@ function resetFilters() {
     </div>
 
     <div class="flex items-center gap-2">
+      <UCheckbox
+        v-model="filters.live_only"
+        label="Show only live matches"
+      />
       <UCheckbox
         v-model="filters.has_outcomes"
         label="Show only matches with outcomes"

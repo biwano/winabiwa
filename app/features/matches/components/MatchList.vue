@@ -12,6 +12,7 @@ function getInitialFilters(): MatchFilters {
     category_id: route.query.category_id ? Number(route.query.category_id) : null,
     tournament_id: route.query.tournament_id ? Number(route.query.tournament_id) : null,
     search: (route.query.search as string) || '',
+    live_only: route.query.live_only === 'true',
     has_outcomes: route.query.has_outcomes === undefined ? true : route.query.has_outcomes === 'true'
   }
 }
@@ -28,6 +29,8 @@ watch([filters, page], ([newFilters, newPage]) => {
   if (newFilters.category_id) query.category_id = newFilters.category_id
   if (newFilters.tournament_id) query.tournament_id = newFilters.tournament_id
   if (newFilters.search) query.search = newFilters.search
+  // Only add live_only to query if it's NOT the default (false)
+  if (newFilters.live_only) query.live_only = 'true'
   // Only add has_outcomes to query if it's NOT the default (true)
   if (newFilters.has_outcomes === false) query.has_outcomes = 'false'
   if (newPage > 1) query.page = newPage
@@ -52,6 +55,7 @@ watch(() => route.query, (newQuery) => {
     category_id: newQuery.category_id ? Number(newQuery.category_id) : null,
     tournament_id: newQuery.tournament_id ? Number(newQuery.tournament_id) : null,
     search: (newQuery.search as string) || '',
+    live_only: newQuery.live_only === 'true',
     has_outcomes: newQuery.has_outcomes === undefined ? true : newQuery.has_outcomes === 'true'
   }
 
@@ -99,6 +103,10 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
 
   if (filters.value.search) {
     query = query.ilike('title', `%${filters.value.search}%`)
+  }
+
+  if (filters.value.live_only) {
+    query = query.eq('status', 'LIVE')
   }
 
   if (filters.value.has_outcomes) {

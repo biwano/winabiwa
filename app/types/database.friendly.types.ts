@@ -20,5 +20,6 @@ export interface MatchFilters {
   tournament_id?: number | null
   category_id?: number | null
   search?: string
+  live_only?: boolean
   has_outcomes?: boolean
 }

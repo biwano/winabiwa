@@ -44,8 +44,11 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 - **Features**:
   - Displays a list of matches ordered by `match_start` descending.
   - Filtering: Users can filter matches by sport, tournament, or category.
+  - Live Filtering: A toggle to show only live matches (`status = "LIVE"`).
+    - This filter is disabled by default.
+    - When enabled, only matches currently in live state are displayed.
   - Outcome Filtering: A toggle to show only matches that have at least one outcome. This filter is enabled by default.
-  - URL Synchronization: All filters (sport, category, tournament, search, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
+  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
   - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
