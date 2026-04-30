@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import type { WinamaxMatch, MatchFilters } from '~~/app/types/database.friendly.types'
+import type { WinamaxMatch, MatchFilters, MatchTag, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
+
+interface MatchTagLink {
+  tag: MatchTag | null
+}
+
+interface MatchListRow extends WinamaxMatch {
+  sport: WinamaxSport | null
+  category: WinamaxCategory | null
+  tournament: WinamaxTournament | null
+  winamax_match_tags?: MatchTagLink[] | null
+}
 
 const client = useSupabaseClient()
 
@@ -11,8 +22,9 @@ function getInitialFilters(): MatchFilters {
     sport_id: route.query.sport_id ? Number(route.query.sport_id) : null,
     category_id: route.query.category_id ? Number(route.query.category_id) : null,
     tournament_id: route.query.tournament_id ? Number(route.query.tournament_id) : null,
-    search: (route.query.search as string) || '',
+    search: typeof route.query.search === 'string' ? route.query.search : '',
     live_only: route.query.live_only === 'true',
+    has_tags: route.query.has_tags === 'true',
     has_outcomes: route.query.has_outcomes === undefined ? true : route.query.has_outcomes === 'true'
   }
 }
@@ -31,6 +43,8 @@ watch([filters, page], ([newFilters, newPage]) => {
   if (newFilters.search) query.search = newFilters.search
   // Only add live_only to query if it's NOT the default (false)
   if (newFilters.live_only) query.live_only = 'true'
+  // Only add has_tags to query if it's NOT the default (false)
+  if (newFilters.has_tags) query.has_tags = 'true'
   // Only add has_outcomes to query if it's NOT the default (true)
   if (newFilters.has_outcomes === false) query.has_outcomes = 'false'
   if (newPage > 1) query.page = newPage
@@ -54,8 +68,9 @@ watch(() => route.query, (newQuery) => {
     sport_id: newQuery.sport_id ? Number(newQuery.sport_id) : null,
     category_id: newQuery.category_id ? Number(newQuery.category_id) : null,
     tournament_id: newQuery.tournament_id ? Number(newQuery.tournament_id) : null,
-    search: (newQuery.search as string) || '',
+    search: typeof newQuery.search === 'string' ? newQuery.search : '',
     live_only: newQuery.live_only === 'true',
+    has_tags: newQuery.has_tags === 'true',
     has_outcomes: newQuery.has_outcomes === undefined ? true : newQuery.has_outcomes === 'true'
   }
 
@@ -84,9 +99,13 @@ watch(filters, (newVal, oldVal) => {
 }, { deep: true })
 
 const { data: matchesData, pending } = await useAsyncData('matches', async () => {
+  const tagsSelection = filters.value.has_tags
+    ? 'winamax_match_tags!inner(tag:match_tags(*))'
+    : 'winamax_match_tags(tag:match_tags(*))'
+
   let query = client
     .from('winamax_matches')
-    .select('*, sport:winamax_sports(*), category:winamax_categories(*), tournament:winamax_tournaments(*)', { count: 'exact' })
+    .select(`*, sport:winamax_sports(*), category:winamax_categories(*), tournament:winamax_tournaments(*), ${tagsSelection}`, { count: 'exact' })
     .order('match_start', { ascending: false })
 
   if (filters.value.sport_id) {
@@ -123,8 +142,19 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
     return { matches: [], count: 0 }
   }
 
+  const matches: WinamaxMatch[] = (data || []).map((match: MatchListRow) => {
+    const tags = (match.winamax_match_tags || [])
+      .map(link => link.tag)
+      .filter((tag): tag is MatchTag => tag !== null)
+
+    return {
+      ...match,
+      tags
+    }
+  })
+
   return {
-    matches: data,
+    matches,
     count: count || 0
   }
 }, {

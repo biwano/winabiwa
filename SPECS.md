@@ -47,10 +47,17 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Live Filtering: A toggle to show only live matches (`status = "LIVE"`).
     - This filter is disabled by default.
     - When enabled, only matches currently in live state are displayed.
+  - Tagged Filtering: A toggle to show only matches that have at least one tag in `winamax_match_tags`.
+    - This filter is disabled by default.
+    - When enabled, only matches linked to one or more entries in `match_tags` are displayed.
   - Outcome Filtering: A toggle to show only matches that have at least one outcome. This filter is enabled by default.
-  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
+  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, tagged toggle, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
+  - Tags Column:
+    - Desktop table includes a `Tags` column.
+    - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
+    - If a match has no tags, the column renders an empty state (`-`).
   - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
     - Renders using `div` and flexbox only (not `UTable`).
     - Each match card displays:

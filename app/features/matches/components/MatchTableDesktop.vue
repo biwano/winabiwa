@@ -14,6 +14,7 @@ const columns = [
   { accessorKey: 'title', header: 'Match', id: 'title' },
   { accessorKey: 'sport', header: 'Sport', id: 'sport' },
   { accessorKey: 'tournament', header: 'Tournament', id: 'tournament' },
+  { accessorKey: 'tags', header: 'Tags', id: 'tags' },
   { accessorKey: 'score', header: 'Score', id: 'score' },
   { accessorKey: 'match_start', header: 'Start Time', id: 'match_start' },
   { accessorKey: 'status', header: 'Status', id: 'status' }
@@ -59,6 +60,29 @@ function getFormattedDate(dateStr: string) {
     <template #score-cell="{ row }">
       <span class="text-sm text-gray-500">
         {{ row.original.score || '-' }}
+      </span>
+    </template>
+
+    <template #tags-cell="{ row }">
+      <div
+        v-if="row.original.tags && row.original.tags.length > 0"
+        class="flex flex-wrap gap-1"
+      >
+        <UBadge
+          v-for="tag in row.original.tags"
+          :key="tag.id"
+          size="sm"
+          color="primary"
+          variant="subtle"
+        >
+          {{ tag.code }}
+        </UBadge>
+      </div>
+      <span
+        v-else
+        class="text-sm text-gray-500"
+      >
+        -
       </span>
     </template>
 

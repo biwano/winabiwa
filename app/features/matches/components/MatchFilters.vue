@@ -108,6 +108,7 @@ function resetFilters() {
     tournament_id: null,
     search: '',
     live_only: false,
+    has_tags: false,
     has_outcomes: true
   }
 }
@@ -144,7 +145,7 @@ function resetFilters() {
       />
 
       <UButton
-        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || filters.live_only || !filters.has_outcomes"
+        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || filters.live_only || filters.has_tags || !filters.has_outcomes"
         icon="i-lucide-x"
         color="neutral"
         variant="ghost"
@@ -156,6 +157,10 @@ function resetFilters() {
       <UCheckbox
         v-model="filters.live_only"
         label="Show only live matches"
+      />
+      <UCheckbox
+        v-model="filters.has_tags"
+        label="Show only tagged matches"
       />
       <UCheckbox
         v-model="filters.has_outcomes"

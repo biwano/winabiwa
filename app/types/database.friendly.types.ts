@@ -24,5 +24,6 @@ export interface MatchFilters {
   category_id?: number | null
   search?: string
   live_only?: boolean
+  has_tags?: boolean
   has_outcomes?: boolean
 }
