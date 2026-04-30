@@ -21,6 +21,12 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ### 3.1 Market Structure & Live Data Grabber
 - **Endpoint**: `GET /api/live`
+- **Query Parameters**:
+  - `target` (required): determines which Winamax route is fetched.
+    - Allowed values: `live` or `calendar`.
+    - `target=calendar` sends socket payload `31:42["m",{"route":"calendar:24"}]`.
+    - `target=live` sends socket payload `24:42["m",{"route":"live"}]`.
+  - Any missing or invalid `target` value must return a client error response (`400`).
 - **Functionality**:
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
   - Retrieves the market structure (sports, categories, tournaments, filters, bet categories) and match data.

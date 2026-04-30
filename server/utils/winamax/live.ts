@@ -64,16 +64,18 @@ export interface WinamaxBetCategory extends WinamaxEntity {
 }
 
 export interface WinamaxLiveData {
-  sports: Record<string, WinamaxSport>
-  categories: Record<string, WinamaxCategory>
-  tournaments: Record<string, WinamaxTournament>
-  filters: Record<string, WinamaxFilter>
-  betCategories: Record<string, WinamaxBetCategory>
-  matches: Record<string, WinamaxMatch>
-  bets: Record<string, WinamaxBet>
-  outcomes: Record<string, WinamaxOutcome>
-  odds: Record<string, number>
+  sports: Record<string, WinamaxSport | null>
+  categories: Record<string, WinamaxCategory | null>
+  tournaments: Record<string, WinamaxTournament | null>
+  filters: Record<string, WinamaxFilter | null>
+  betCategories: Record<string, WinamaxBetCategory | null>
+  matches: Record<string, WinamaxMatch | null>
+  bets: Record<string, WinamaxBet | null>
+  outcomes: Record<string, WinamaxOutcome | null>
+  odds: Record<string, number | null>
 }
+
+export type WinamaxLiveTarget = 'live' | 'calendar'
 
 const BASE_URL = 'https://sports-eu-west-3.winamax.fr/uof-sports-server/socket.io/'
 
@@ -174,7 +176,15 @@ async function performRequest(method: 'GET' | 'POST', url: string, jar: CookieJa
   }
 }
 
-export async function fetchWinamaxLiveData(): Promise<WinamaxLiveData> {
+function getRoutePayload(target: WinamaxLiveTarget): string {
+  if (target === 'live') {
+    return '24:42["m",{"route":"live"}]'
+  }
+
+  return '31:42["m",{"route":"calendar:24"}]'
+}
+
+export async function fetchWinamaxLiveData(target: WinamaxLiveTarget): Promise<WinamaxLiveData> {
   const liveData: WinamaxLiveData = {
     sports: {},
     categories: {},
@@ -208,7 +218,7 @@ export async function fetchWinamaxLiveData(): Promise<WinamaxLiveData> {
 
   await performRequest('GET', pollUrl, jar)
 
-  await performRequest('POST', pollUrl, jar, '31:42["m",{"route":"calendar:24"}]')
+  await performRequest('POST', pollUrl, jar, getRoutePayload(target))
 
   const calendar = await performRequest('GET', pollUrl, jar)
 
