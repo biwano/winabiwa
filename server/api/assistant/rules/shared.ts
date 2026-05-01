@@ -1,6 +1,6 @@
 import type { OddRow } from './types.js'
 
-function pickLatestOdd(history: OddRow[]): OddRow | null {
+export function pickLatestOdd(history: OddRow[]): OddRow | null {
   return history[history.length - 1] || null
 }
 
@@ -96,7 +96,7 @@ export function pickFavoriteAndOutsiderOutcomeIds(
   return { favoriteOutcomeId, outsiderOutcomeId }
 }
 
-function pickOddClosestToReference(history: OddRow[], referenceTimestampMs: number): OddRow | null {
+export function pickOddClosestToReference(history: OddRow[], referenceTimestampMs: number): OddRow | null {
   const latest = pickLatestOdd(history)
 
   if (!latest) {

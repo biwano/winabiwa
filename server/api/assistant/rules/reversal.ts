@@ -1,6 +1,9 @@
 import type { MatchRow } from './types.js'
+import { pickLatestOdd, pickOddClosestToReference } from './shared.js'
 
 const REVERSAL_MAX_FAVORITE_ODD = 2.5
+const REVERSAL_VARIATION_WINDOW_MS = 5 * 60 * 1000
+const REVERSAL_MIN_GAP_VARIATION_RATIO = 0.15
 
 interface ParsedScore {
   home: number
@@ -28,19 +31,11 @@ function parseScore(score: string | null): ParsedScore | null {
   }
 
   const normalizedScore = score.trim()
-  const simpleScore = parseScoreSegment(normalizedScore)
-  if (simpleScore) {
-    return simpleScore
-  }
 
   const setSegments = normalizedScore
     .split(/\s*-\s*/)
     .map(segment => segment.trim())
     .filter(segment => segment.length > 0)
-
-  if (setSegments.length < 2) {
-    return null
-  }
 
   let homeSetWins = 0
   let awaySetWins = 0
@@ -71,6 +66,48 @@ export function analyzeReversal(match: MatchRow): boolean {
 
   const favoriteLatest = match.favorite.odds[match.favorite.odds.length - 1]
   if (!favoriteLatest || favoriteLatest.value >= REVERSAL_MAX_FAVORITE_ODD) {
+    return false
+  }
+
+  const outsiderLatest = pickLatestOdd(match.outsider.odds)
+  if (!outsiderLatest) {
+    return false
+  }
+  if (favoriteLatest.value <= outsiderLatest.value) {
+    return false
+  }
+
+  const latestTimestampMs = new Date(favoriteLatest.timestamp).getTime()
+  if (Number.isNaN(latestTimestampMs)) {
+    return false
+  }
+  const referenceTimestampMs = latestTimestampMs - REVERSAL_VARIATION_WINDOW_MS
+  const favoriteReference = pickOddClosestToReference(match.favorite.odds, referenceTimestampMs)
+  const outsiderReference = pickOddClosestToReference(match.outsider.odds, referenceTimestampMs)
+  if (!favoriteReference || !outsiderReference) {
+    return false
+  }
+  const favoriteReferenceTimestampMs = new Date(favoriteReference.timestamp).getTime()
+  const outsiderReferenceTimestampMs = new Date(outsiderReference.timestamp).getTime()
+  if (Number.isNaN(favoriteReferenceTimestampMs) || Number.isNaN(outsiderReferenceTimestampMs)) {
+    return false
+  }
+  const favoriteWindowDeltaMs = latestTimestampMs - favoriteReferenceTimestampMs
+  const outsiderWindowDeltaMs = latestTimestampMs - outsiderReferenceTimestampMs
+  if (favoriteWindowDeltaMs <= 0 || outsiderWindowDeltaMs <= 0) {
+    return false
+  }
+  if (favoriteWindowDeltaMs >= REVERSAL_VARIATION_WINDOW_MS || outsiderWindowDeltaMs >= REVERSAL_VARIATION_WINDOW_MS) {
+    return false
+  }
+
+  const currentGap = favoriteLatest.value - outsiderLatest.value
+  const referenceGap = favoriteReference.value - outsiderReference.value
+  if (referenceGap <= 0) {
+    return false
+  }
+  const gapVariationRatio = (currentGap - referenceGap) / referenceGap
+  if (gapVariationRatio <= REVERSAL_MIN_GAP_VARIATION_RATIO) {
     return false
   }
 

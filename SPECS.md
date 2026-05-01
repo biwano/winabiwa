@@ -196,6 +196,8 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Condition:
     - The current score indicates that the favorite is losing the match.
     - The favorite's latest odd remains under `2.5`.
+    - The current favorite odd is higher than the current outsider odd.
+    - The variation `(favorite_odd - outsider_odd)` must be greater than `15%` within less than `5` minutes.
   - Action:
     - Add the `REVERSAL` tag to the match.
 - **Idempotency**:
