@@ -7,13 +7,8 @@ interface ParsedScore {
   away: number
 }
 
-function parseScore(score: string | null): ParsedScore | null {
-  if (!score) {
-    return null
-  }
-
-  const normalizedScore = score.trim()
-  const scoreMatch = normalizedScore.match(/^(\d+)\s*[:-]\s*(\d+)$/)
+function parseScoreSegment(segment: string): ParsedScore | null {
+  const scoreMatch = segment.trim().match(/^(\d+)\s*[:-]\s*(\d+)$/)
   if (!scoreMatch) {
     return null
   }
@@ -25,6 +20,47 @@ function parseScore(score: string | null): ParsedScore | null {
   }
 
   return { home, away }
+}
+
+function parseScore(score: string | null): ParsedScore | null {
+  if (!score) {
+    return null
+  }
+
+  const normalizedScore = score.trim()
+  const simpleScore = parseScoreSegment(normalizedScore)
+  if (simpleScore) {
+    return simpleScore
+  }
+
+  const setSegments = normalizedScore
+    .split(/\s*-\s*/)
+    .map(segment => segment.trim())
+    .filter(segment => segment.length > 0)
+
+  if (setSegments.length < 2) {
+    return null
+  }
+
+  let homeSetWins = 0
+  let awaySetWins = 0
+  for (const setSegment of setSegments) {
+    const parsedSet = parseScoreSegment(setSegment)
+    if (!parsedSet) {
+      return null
+    }
+
+    if (parsedSet.home > parsedSet.away) {
+      homeSetWins += 1
+    } else if (parsedSet.away > parsedSet.home) {
+      awaySetWins += 1
+    }
+  }
+
+  return {
+    home: homeSetWins,
+    away: awaySetWins
+  }
 }
 
 export function analyzeReversal(match: MatchRow): boolean {

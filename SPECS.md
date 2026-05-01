@@ -40,6 +40,10 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
   - Retrieves the market structure (sports, categories, tournaments, filters, bet categories) and match data.
   - Stores metadata, matches, bets, and outcomes in the database (upsert).
+  - Score mapping during match upsert:
+    - If the scraped match object contains `setScores` in a format like `0:0 - 0:0 - 1:0` (variable set count), persist this set-based value into `winamax_matches.score`.
+    - If set-based scores are not available, persist the regular single-score value when provided.
+    - Persisted score strings must remain colon-separated (`:`), never dash-separated (`-`).
   - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
   - If `cleanup=true` and `target=live`, after the scraped data has been injected into the database:
     - Delete all existing rows in `winamax_matches` where `status = "LIVE"` and `id` is **not** present in the freshly scraped live match id set.
@@ -140,6 +144,15 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Rule analyzers must not query Supabase directly; they only receive prepared data context and return tag decisions.
   - Tag persistence (upsert in `winamax_match_tags`) remains centralized after all rule analyzers run.
 - **Rule Set (v1 + v2 + v3)**:
+  - Score parsing support (shared for rules):
+    - Assistant score helpers must support both:
+      - Simple score format (example: `1:0`).
+      - Set-based score format (example: `0:0 - 0:0 - 1:0`).
+    - For set-based values, derive winner state by counting set wins (`home > away` per set vs `away > home` per set):
+      - Home leading in sets => winner side `home`.
+      - Away leading in sets => winner side `away`.
+      - Equal set wins => draw / no leader.
+    - Rules that require "favorite is losing" must rely on this shared parsed winner state, not on ad-hoc string comparisons.
   - Favorite/outsider determination:
     - The favorite must be determined once per match from the `main_bet_id` outcomes.
     - Compare outcome odds at the timestamp closest to `winamax_matches.match_start`.
@@ -216,7 +229,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - `competitor2_id`: BigInt
   - `competitor2_name`: Text
   - `main_bet_id`: BigInt (Nullable)
-  - `score`: Text (Nullable, expected format such as `0-0`)
+  - `score`: Text (Nullable, expected format such as `0:0` or `0:0 - 0:0 - 1:0`)
   - `updated_at`: Timestamp with timezone
 
 - **`match_tags`**:

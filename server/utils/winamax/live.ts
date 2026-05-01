@@ -36,6 +36,7 @@ export interface WinamaxMatch extends WinamaxEntity {
   competitor2Name: string
   mainBetId?: number
   score?: string
+  setScores?: string
 }
 
 export interface WinamaxBet extends WinamaxEntity {

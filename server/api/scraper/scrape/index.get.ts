@@ -62,6 +62,56 @@ export default defineEventHandler(async (event) => {
       return result
     }
 
+    function normalizeScoreSegment(segment: string): string | null {
+      const scoreMatch = segment.trim().match(/^(\d+)\s*[:-]\s*(\d+)$/)
+      if (!scoreMatch) {
+        return null
+      }
+
+      return `${scoreMatch[1]}:${scoreMatch[2]}`
+    }
+
+    function normalizeSetScoreValue(rawSetScore: string): string | null {
+      const segments = rawSetScore
+        .split(/\s*-\s*/)
+        .map(segment => segment.trim())
+        .filter(segment => segment.length > 0)
+
+      if (segments.length < 2) {
+        return null
+      }
+
+      const normalizedSegments: string[] = []
+      for (const segment of segments) {
+        const normalized = normalizeScoreSegment(segment)
+        if (normalized === null) {
+          return null
+        }
+        normalizedSegments.push(normalized)
+      }
+
+      return normalizedSegments.join(' - ')
+    }
+
+    function resolveMatchScore(match: { score?: string | null, setScores?: string | null }): string | null {
+      const rawSetScore = typeof match.setScores === 'string' && match.setScores.trim().length > 0
+        ? match.setScores
+        : null
+
+      if (rawSetScore) {
+        const normalizedSetScore = normalizeSetScoreValue(rawSetScore)
+        if (normalizedSetScore !== null) {
+          return normalizedSetScore
+        }
+      }
+
+      if (typeof match.score === 'string' && match.score.trim().length > 0) {
+        return normalizeScoreSegment(match.score)
+      }
+
+      return null
+    }
+
     const buildValidIds = <T>(
       existingRows: Array<{ id: number }> | null,
       record: Record<string, T | null> | undefined
@@ -218,7 +268,7 @@ export default defineEventHandler(async (event) => {
           competitor1_name: match.competitor1Name,
           competitor2_id: match.competitor2Id,
           competitor2_name: match.competitor2Name,
-          score: match.score || null,
+          score: resolveMatchScore(match),
           updated_at: now
         })
       )
