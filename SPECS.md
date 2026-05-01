@@ -80,7 +80,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Tags Column:
     - Desktop table includes a `Tags` column.
     - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
-    - Each tag badge uses the same chip styling as today (for example: small, primary subtle variant).
+    - Each assistant tag badge uses the same chip styling as today (for example: small, primary subtle variant) and the same single assistant-tag color (no per-rule color distinction).
     - On hover over a tag badge, show a tooltip (or equivalent accessible hint) with the tag assignment time from `winamax_match_tags.created_at`, formatted the same way as the `Start Time` column (locale datetime string, consistent with `match_start` rendering).
     - Match list data loading must return `created_at` per tag association (join row), not only fields from `match_tags`, so the UI can show assignment time without an extra round trip.
     - If a match has no tags, the column renders an empty state (`-`).
@@ -96,12 +96,13 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Clicking on a match opens a side panel.
   - The side panel header shows the match identifier (`matchId`) on the right side of the title in a very small font.
   - The displayed `matchId` is copyable to clipboard from the UI.
+  - The side panel displays the current match score (`winamax_matches.score`) when available.
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Under the odds chart, display all involved outcome identifiers with their labels in a small font (for example: `123456789 - Home`, `123456790 - Draw`, `123456791 - Away`).
   - Below the outcome identifiers, list all tags assigned to the match:
     - For each row in `winamax_match_tags`, show the tag **code** (`match_tags.code`) and the assignment **time** (`winamax_match_tags.created_at`).
-    - Reuse the same **badge/chip** component and classes as the main list `Tags` column for the tag **code** (`match_tags.code`), and place the formatted **time** beside it on the same row.
+    - Reuse the same **badge/chip** component and classes as the main list `Tags` column for the tag **code** (`match_tags.code`), including the same single assistant-tag color, and place the formatted **time** beside it on the same row.
     - The time must use the **same datetime formatting** as the main table `Start Time` column (same locale string rules as `match_start`).
     - Order tags by `created_at` ascending (consistent with chart markers).
     - If there are no tags, omit the block or show an empty state consistent with the list (`-`).
@@ -110,6 +111,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - All tags linked through `winamax_match_tags` must be rendered inside the chart using `VChart` (ECharts) options only.
     - Do not use external HTML/CSS overlays for tag rendering.
     - Tags are rendered from tag `code` values using native chart option primitives (for example: `graphic`, `markPoint`, `markLine`, or equivalent supported option blocks).
+    - Tag marker/label colors on the chart must use the same single assistant-tag color used in other UI locations (table/list/side panel badges).
     - Tag placement must be driven by each tag's `created_at` timestamp:
       - Each rendered tag marker/label is positioned on the chart time axis at its own `created_at` value.
       - If multiple tags share the same timestamp, all of them must remain visible (for example via stacking/offset strategy).

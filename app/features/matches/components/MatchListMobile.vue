@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { WinamaxMatch } from '~~/app/types/database.friendly.types'
+import { getTagBadgeColor } from '~~/app/features/matches/utils/tag-colors.js'
 
 defineProps<{
   matches: WinamaxMatch[]
@@ -78,7 +79,7 @@ function getFormattedDate(dateStr: string) {
                   >
                     <UBadge
                       size="sm"
-                      color="primary"
+                      :color="getTagBadgeColor(tag.code)"
                       variant="subtle"
                     >
                       {{ tag.code }}

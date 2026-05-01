@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MatchTagAssignmentRow } from '~~/app/types/database.friendly.types'
+import { getTagBadgeColor } from '~~/app/features/matches/utils/tag-colors.js'
 
 defineProps<{
   rows: MatchTagAssignmentRow[]
@@ -19,7 +20,7 @@ function formatAssignedAt(iso: string) {
     >
       <UBadge
         size="sm"
-        color="primary"
+        :color="getTagBadgeColor(row.code)"
         variant="subtle"
       >
         {{ row.code }}

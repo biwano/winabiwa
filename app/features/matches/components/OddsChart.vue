@@ -12,6 +12,7 @@ import {
 import VChart from 'vue-echarts'
 import type { MatchTagAssignmentRow, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
+import { getTagChartColor } from '~~/app/features/matches/utils/tag-colors.js'
 
 use([
   CanvasRenderer,
@@ -135,7 +136,7 @@ const option = computed(() => {
       symbol: 'roundRect',
       symbolSize,
       itemStyle: {
-        color: '#d946ef'
+        color: getTagChartColor(tag.code)
       },
       label: {
         show: true,

@@ -152,6 +152,9 @@ onBeforeUnmount(() => {
             <p class="text-sm text-gray-500">
               {{ match.match_start ? new Date(match.match_start).toLocaleString() : '' }}
             </p>
+            <p class="text-sm text-gray-500">
+              Score: {{ match.score || '-' }}
+            </p>
           </div>
           <div class="flex flex-col items-end gap-1 shrink-0">
             <button
