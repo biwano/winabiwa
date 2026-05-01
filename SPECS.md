@@ -154,6 +154,14 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - Number of tags created (or already existing/no-op).
     - The summary must indicate whether execution was scoped (`matchId` mode) or global batch mode.
 
+#### Reset (remove all match–tag links)
+- **Endpoint**: `GET /api/assistant/reset`
+- **Functionality**:
+  - Deletes every row from `winamax_match_tags` so no match retains an assigned tag.
+  - Does not delete rows from `match_tags` (tag definitions / catalog remain available for future runs of `GET /api/assistant/run`).
+- **Response**:
+  - Returns a short JSON summary suitable for manual invocation or jobs (for example: number of rows deleted, or counts before/after).
+
 ## 4. Database Schema
 
 ### 4.1 Winamax Metadata Tables
