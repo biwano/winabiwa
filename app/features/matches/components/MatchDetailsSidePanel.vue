@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MatchTag, WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
 
 const props = defineProps<{
   match: WinamaxMatch | null
@@ -29,6 +30,27 @@ type ChartTagPoint = {
 }
 const chartTags = ref<ChartTagPoint[]>([])
 const pending = ref(false)
+const copiedMatchId = ref(false)
+let copiedResetTimer: ReturnType<typeof setTimeout> | null = null
+
+async function copyMatchIdToClipboard(matchId: string | number): Promise<void> {
+  const copied = await copyTextToClipboard(String(matchId))
+  if (!copied) return
+
+  copiedMatchId.value = true
+  if (copiedResetTimer) clearTimeout(copiedResetTimer)
+  copiedResetTimer = setTimeout(() => {
+    copiedMatchId.value = false
+  }, 1500)
+}
+
+function resetCopiedMatchIdUi(): void {
+  copiedMatchId.value = false
+  if (copiedResetTimer) {
+    clearTimeout(copiedResetTimer)
+    copiedResetTimer = null
+  }
+}
 
 function toChartTags(data: MatchTagLink[] | null): ChartTagPoint[] {
   if (!data) return []
@@ -45,6 +67,7 @@ function toChartTags(data: MatchTagLink[] | null): ChartTagPoint[] {
 
 // Fetch outcomes and then their odds history
 watch(() => props.match, async (newMatch) => {
+  resetCopiedMatchIdUi()
   if (!newMatch?.main_bet_id) {
     outcomes.value = []
     oddsHistory.value = []
@@ -88,6 +111,10 @@ watch(() => props.match, async (newMatch) => {
     pending.value = false
   }
 }, { immediate: true })
+
+onBeforeUnmount(() => {
+  if (copiedResetTimer) clearTimeout(copiedResetTimer)
+})
 </script>
 
 <template>
@@ -110,16 +137,27 @@ watch(() => props.match, async (newMatch) => {
               {{ match.match_start ? new Date(match.match_start).toLocaleString() : '' }}
             </p>
           </div>
-          <UButton
-            v-if="match"
-            :to="`https://www.winamax.fr/paris-sportifs/match/${match.id}`"
-            target="_blank"
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-external-link"
-            size="sm"
-            title="Open on Winamax"
-          />
+          <div class="flex flex-col items-end gap-1 shrink-0">
+            <button
+              v-if="match"
+              type="button"
+              class="text-[10px] leading-none text-gray-500 hover:text-gray-700 font-mono transition-colors cursor-pointer"
+              :title="copiedMatchId ? 'Copied' : 'Click to copy match ID'"
+              @click="copyMatchIdToClipboard(match.id)"
+            >
+              {{ copiedMatchId ? 'Copied' : `ID: ${match.id}` }}
+            </button>
+            <UButton
+              v-if="match"
+              :to="`https://www.winamax.fr/paris-sportifs/match/${match.id}`"
+              target="_blank"
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-external-link"
+              size="sm"
+              title="Open on Winamax"
+            />
+          </div>
         </div>
 
         <div

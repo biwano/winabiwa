@@ -1,10 +1,10 @@
 import {
   fetchWinamaxLiveData,
-  type WinamaxLiveTarget,
-  type WinamaxMatch
+  type WinamaxLiveTarget
 } from '../../utils/winamax/live.js'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import type { PostgrestError } from '@supabase/supabase-js'
+import * as R from 'remeda'
 
 export default defineEventHandler(async (event) => {
   try {
@@ -24,6 +24,34 @@ export default defineEventHandler(async (event) => {
     const isNotNull = <T>(value: T | null): value is T => value !== null
     const countNonNull = <T>(record: Record<string, T | null> | undefined) => Object.values(record || {}).filter(isNotNull).length
 
+    function parsePositiveIntKey(key: string): number | null {
+      if (!/^\d+$/.test(key)) return null
+      const n = Number.parseInt(key, 10)
+      if (!Number.isFinite(n) || n <= 0) return null
+      return n
+    }
+
+    function nonNullNumericIdEntries<T>(
+      record: Record<string, T | null> | undefined
+    ): Array<[number, T]> {
+      const result: Array<[number, T]> = []
+      for (const [key, value] of Object.entries(record || {})) {
+        if (!isNotNull(value)) continue
+        const id = parsePositiveIntKey(key)
+        if (id === null) continue
+        result.push([id, value])
+      }
+      return result
+    }
+
+    const buildValidIds = <T>(
+      existingRows: Array<{ id: number }> | null,
+      record: Record<string, T | null> | undefined
+    ) => new Set<number>([
+      ...R.map(existingRows || [], row => row.id),
+      ...R.map(nonNullNumericIdEntries(record), ([id]) => id)
+    ])
+
     // 0. Fetch existing IDs to avoid foreign key violations for missing metadata
     const [
       { data: existingSports },
@@ -41,30 +69,12 @@ export default defineEventHandler(async (event) => {
       client.from('winamax_matches').select('id')
     ])
 
-    const validSportIds = new Set((existingSports || []).map(s => s.id))
-    for (const [id, sport] of Object.entries(state.sports || {})) {
-      if (isNotNull(sport)) validSportIds.add(Number.parseInt(id, 10))
-    }
-    const validCategoryIds = new Set((existingCategories || []).map(c => c.id))
-    for (const [id, category] of Object.entries(state.categories || {})) {
-      if (isNotNull(category)) validCategoryIds.add(Number.parseInt(id, 10))
-    }
-    const validTournamentIds = new Set((existingTournaments || []).map(t => t.id))
-    for (const [id, tournament] of Object.entries(state.tournaments || {})) {
-      if (isNotNull(tournament)) validTournamentIds.add(Number.parseInt(id, 10))
-    }
-    const validBetCategoryIds = new Set((existingBetCategories || []).map(bc => bc.id))
-    for (const [id, betCategory] of Object.entries(state.betCategories || {})) {
-      if (isNotNull(betCategory)) validBetCategoryIds.add(Number.parseInt(id, 10))
-    }
-    const validBetFilterIds = new Set((existingBetFilters || []).map(f => f.id))
-    for (const [id, filter] of Object.entries(state.filters || {})) {
-      if (isNotNull(filter)) validBetFilterIds.add(Number.parseInt(id, 10))
-    }
-    const validMatchIds = new Set((existingMatches || []).map(m => m.id))
-    for (const [id, match] of Object.entries(state.matches || {})) {
-      if (isNotNull(match)) validMatchIds.add(Number.parseInt(id, 10))
-    }
+    const validSportIds = buildValidIds(existingSports || null, state.sports)
+    const validCategoryIds = buildValidIds(existingCategories || null, state.categories)
+    const validTournamentIds = buildValidIds(existingTournaments || null, state.tournaments)
+    const validBetCategoryIds = buildValidIds(existingBetCategories || null, state.betCategories)
+    const validBetFilterIds = buildValidIds(existingBetFilters || null, state.filters)
+    const validMatchIds = buildValidIds(existingMatches || null, state.matches)
 
     const getSportId = (id: number | null | undefined) => (id && validSportIds.has(id)) ? id : null
     const getCategoryId = (id: number | null | undefined) => (id && validCategoryIds.has(id)) ? id : null
@@ -89,56 +99,47 @@ export default defineEventHandler(async (event) => {
     }
 
     // 1. Upsert Sports
-    const sportsToUpsert = []
-    if (state.sports) {
-      for (const [id, sport] of Object.entries(state.sports)) {
-        if (!isNotNull(sport)) continue
-        sportsToUpsert.push({
-          id: Number.parseInt(id, 10),
-          name: sport.sportName,
-          updated_at: now
-        })
-      }
-    }
+    const sportsToUpsert = R.map(
+      nonNullNumericIdEntries(state.sports),
+      ([id, sport]) => ({
+        id,
+        name: sport.sportName,
+        updated_at: now
+      })
+    )
 
     if (sportsToUpsert.length > 0) {
       checkError(await client.from('winamax_sports').upsert(sportsToUpsert))
     }
 
     // 2. Upsert Categories
-    const categoriesToUpsert = []
-    if (state.categories) {
-      for (const [id, category] of Object.entries(state.categories)) {
-        if (!isNotNull(category)) continue
-        categoriesToUpsert.push({
-          id: Number.parseInt(id, 10),
-          name: category.categoryName,
-          flag: category.flag || null,
-          sport_id: getSportId(category.sportId),
-          updated_at: now
-        })
-      }
-    }
+    const categoriesToUpsert = R.map(
+      nonNullNumericIdEntries(state.categories),
+      ([id, category]) => ({
+        id,
+        name: category.categoryName,
+        flag: category.flag || null,
+        sport_id: getSportId(category.sportId),
+        updated_at: now
+      })
+    )
 
     if (categoriesToUpsert.length > 0) {
       checkError(await client.from('winamax_categories').upsert(categoriesToUpsert))
     }
 
     // 3. Upsert Tournaments
-    const tournamentsToUpsert = []
-    if (state.tournaments) {
-      for (const [id, tournament] of Object.entries(state.tournaments)) {
-        if (!isNotNull(tournament)) continue
-        tournamentsToUpsert.push({
-          id: Number.parseInt(id, 10),
-          name: tournament.tournamentName,
-          category_id: getCategoryId(tournament.categoryId),
-          sr_tournament_id: tournament.srTournamentId || null,
-          sr_season_id: tournament.srSeasonId || null,
-          updated_at: now
-        })
-      }
-    }
+    const tournamentsToUpsert = R.map(
+      nonNullNumericIdEntries(state.tournaments),
+      ([id, tournament]) => ({
+        id,
+        name: tournament.tournamentName,
+        category_id: getCategoryId(tournament.categoryId),
+        sr_tournament_id: tournament.srTournamentId || null,
+        sr_season_id: tournament.srSeasonId || null,
+        updated_at: now
+      })
+    )
 
     if (tournamentsToUpsert.length > 0) {
       checkError(await client.from('winamax_tournaments').upsert(tournamentsToUpsert))
@@ -146,20 +147,19 @@ export default defineEventHandler(async (event) => {
 
     // 4. Upsert Bet Filters
     if (state.filters) {
-      const filtersToUpsert = []
-      for (const [id, filter] of Object.entries(state.filters)) {
-        if (!isNotNull(filter)) continue
-        filtersToUpsert.push({
-          id: Number.parseInt(id, 10),
+      const filtersToUpsert = R.map(
+        nonNullNumericIdEntries(state.filters),
+        ([id, filter]) => ({
+          id,
           name: filter.betFilterName,
           parent_id: getBetFilterId(filter.betFilterParentId),
           is_default: !!filter.betFilterIsDefault,
           display_order: filter.displayOrder,
           updated_at: now
         })
-      }
+      )
       if (filtersToUpsert.length > 0) {
-        const sortedFilters = filtersToUpsert.sort((a, b) => {
+        const sortedFilters = [...filtersToUpsert].sort((a, b) => {
           if (a.parent_id === null && b.parent_id !== null) return -1
           if (a.parent_id !== null && b.parent_id === null) return 1
           return 0
@@ -170,16 +170,15 @@ export default defineEventHandler(async (event) => {
 
     // 5. Upsert Bet Categories
     if (state.betCategories) {
-      const betCategoriesToUpsert = []
-      for (const [id, betCategory] of Object.entries(state.betCategories)) {
-        if (!isNotNull(betCategory)) continue
-        betCategoriesToUpsert.push({
-          id: Number.parseInt(id, 10),
+      const betCategoriesToUpsert = R.map(
+        nonNullNumericIdEntries(state.betCategories),
+        ([id, betCategory]) => ({
+          id,
           name: betCategory.name,
           display_order: betCategory.displayOrder,
           updated_at: now
         })
-      }
+      )
       if (betCategoriesToUpsert.length > 0) {
         checkError(await client.from('winamax_bet_categories').upsert(betCategoriesToUpsert))
       }
@@ -187,11 +186,10 @@ export default defineEventHandler(async (event) => {
 
     // 6. Upsert Matches (without main_bet_id first to avoid FK circular dependency)
     if (state.matches) {
-      const matchesToUpsert = []
-      for (const [id, match] of Object.entries(state.matches)) {
-        if (!isNotNull(match)) continue
-        matchesToUpsert.push({
-          id: Number.parseInt(id, 10),
+      const matchesToUpsert = R.map(
+        nonNullNumericIdEntries(state.matches),
+        ([id, match]) => ({
+          id,
           sport_id: getSportId(match.sportId),
           category_id: getCategoryId(match.categoryId),
           tournament_id: getTournamentId(match.tournamentId),
@@ -205,7 +203,7 @@ export default defineEventHandler(async (event) => {
           score: match.score || null,
           updated_at: now
         })
-      }
+      )
       if (matchesToUpsert.length > 0) {
         checkError(await client.from('winamax_matches').upsert(matchesToUpsert))
       }
@@ -213,18 +211,17 @@ export default defineEventHandler(async (event) => {
 
     // 7. Upsert Bets
     if (state.bets) {
-      const betsToUpsert = []
-      for (const [id, bet] of Object.entries(state.bets)) {
-        if (!isNotNull(bet)) continue
-        betsToUpsert.push({
-          id: Number.parseInt(id, 10),
+      const betsToUpsert = R.map(
+        nonNullNumericIdEntries(state.bets),
+        ([id, bet]) => ({
+          id,
           match_id: getMatchId(bet.matchId),
           title: bet.betTitle,
           bet_type_category_id: getBetCategoryId(bet.betTypeCategoryId),
           market_id: bet.marketId,
           updated_at: now
         })
-      }
+      )
       if (betsToUpsert.length > 0) {
         checkError(await client.from('winamax_bets').upsert(betsToUpsert))
       }
@@ -232,24 +229,21 @@ export default defineEventHandler(async (event) => {
 
     // Re-fetch valid bet IDs for matches and outcomes
     const { data: existingBets } = await client.from('winamax_bets').select('id')
-    const validBetIds = new Set((existingBets || []).map(b => b.id))
-    for (const [id, bet] of Object.entries(state.bets || {})) {
-      if (isNotNull(bet)) validBetIds.add(Number.parseInt(id, 10))
-    }
+    const validBetIds = buildValidIds(existingBets || null, state.bets)
 
     const getBetId = (id: number | null | undefined) => (id && validBetIds.has(id)) ? id : null
 
     // 8. Update Matches with main_bet_id
     if (state.matches) {
-      const matchesWithBetId = []
-      for (const [id, match] of Object.entries(state.matches)) {
-        if (!isNotNull(match) || !match.mainBetId) continue
-        matchesWithBetId.push({
-          id: Number.parseInt(id, 10),
+      const matchesWithBetId = R.pipe(
+        nonNullNumericIdEntries(state.matches),
+        R.filter(([, match]) => !!match.mainBetId),
+        R.map(([id, match]) => ({
+          id,
           main_bet_id: getBetId(match.mainBetId),
           updated_at: now
-        })
-      }
+        }))
+      )
       if (matchesWithBetId.length > 0) {
         checkError(await client.from('winamax_matches').upsert(matchesWithBetId))
       }
@@ -257,17 +251,16 @@ export default defineEventHandler(async (event) => {
 
     // 9. Upsert Outcomes
     if (state.outcomes) {
-      const outcomesToUpsert = []
-      for (const [id, outcome] of Object.entries(state.outcomes)) {
-        if (!isNotNull(outcome)) continue
-        outcomesToUpsert.push({
-          id: Number.parseInt(id, 10),
+      const outcomesToUpsert = R.map(
+        nonNullNumericIdEntries(state.outcomes),
+        ([id, outcome]) => ({
+          id,
           bet_id: getBetId(outcome.betId),
           label: outcome.label,
           code: outcome.code || null,
           updated_at: now
         })
-      }
+      )
       if (outcomesToUpsert.length > 0) {
         checkError(await client.from('winamax_outcomes').upsert(outcomesToUpsert))
       }
@@ -275,15 +268,20 @@ export default defineEventHandler(async (event) => {
 
     // 10. Historize Odds
     if (state.odds) {
-      const oddsToInsert = []
-      for (const [outcomeId, value] of Object.entries(state.odds)) {
-        if (value === null) continue
-        oddsToInsert.push({
-          outcome_id: Number.parseInt(outcomeId, 10),
-          timestamp: oddsTimestampStr,
-          value
-        })
-      }
+      const oddsToInsert = R.pipe(
+        Object.entries(state.odds),
+        R.filter((entry): entry is [string, number] => entry[1] !== null),
+        R.map(([outcomeIdStr, value]) => {
+          const outcome_id = parsePositiveIntKey(outcomeIdStr)
+          if (outcome_id === null) return null
+          return {
+            outcome_id,
+            timestamp: oddsTimestampStr,
+            value
+          }
+        }),
+        R.filter((row): row is { outcome_id: number, timestamp: string, value: number } => row !== null)
+      )
       if (oddsToInsert.length > 0) {
         // Use upsert to avoid duplicate key errors if the job runs multiple times within the same minute
         checkError(await client.from('winamax_odds_history').upsert(oddsToInsert))

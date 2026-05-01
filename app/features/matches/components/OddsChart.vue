@@ -11,6 +11,7 @@ import {
 } from 'echarts/components.js'
 import VChart from 'vue-echarts'
 import type { WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
 
 use([
   CanvasRenderer,
@@ -74,6 +75,41 @@ type LineSeries = {
   }
 }
 
+const outcomesWithLabels = computed(() =>
+  props.outcomes.map(outcome => ({
+    id: outcome.id,
+    label: outcome.label || 'Unknown'
+  }))
+)
+const copiedOutcomeId = ref<string | null>(null)
+let copiedOutcomeTimer: ReturnType<typeof setTimeout> | null = null
+
+async function copyOutcomeIdToClipboard(outcomeId: number): Promise<void> {
+  const copied = await copyTextToClipboard(String(outcomeId))
+  if (!copied) return
+
+  copiedOutcomeId.value = String(outcomeId)
+  if (copiedOutcomeTimer) clearTimeout(copiedOutcomeTimer)
+  copiedOutcomeTimer = setTimeout(() => {
+    copiedOutcomeId.value = null
+  }, 1500)
+}
+
+function resetCopiedOutcomeUi(): void {
+  copiedOutcomeId.value = null
+  if (copiedOutcomeTimer) {
+    clearTimeout(copiedOutcomeTimer)
+    copiedOutcomeTimer = null
+  }
+}
+
+watch(
+  () => props.outcomes.map(outcome => outcome.id).slice().sort((a, b) => a - b).join(','),
+  () => {
+    resetCopiedOutcomeUi()
+  }
+)
+
 const option = computed(() => {
   const sortedHistory = [...props.oddsHistory].sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -109,7 +145,6 @@ const option = computed(() => {
       }
     }
   })
-  console.log('tagPoints', tagPoints)
   const maxTagStack = tagTimestampCount.size > 0
     ? Math.max(...Array.from(tagTimestampCount.values()))
     : 0
@@ -185,15 +220,36 @@ const option = computed(() => {
     series
   }
 })
+
+onBeforeUnmount(() => {
+  if (copiedOutcomeTimer) clearTimeout(copiedOutcomeTimer)
+})
 </script>
 
 <template>
-  <div class="h-64 w-full">
-    <VChart
-      class="chart"
-      :option="option"
-      autoresize
-    />
+  <div class="w-full space-y-2">
+    <div class="h-64 w-full">
+      <VChart
+        class="chart"
+        :option="option"
+        autoresize
+      />
+    </div>
+    <div
+      v-if="outcomesWithLabels.length > 0"
+      class="text-[10px] leading-4 text-gray-500 flex flex-col gap-0.5"
+    >
+      <button
+        v-for="outcome in outcomesWithLabels"
+        :key="outcome.id"
+        type="button"
+        class="font-mono text-left w-fit hover:text-gray-700 transition-colors"
+        :title="copiedOutcomeId === String(outcome.id) ? 'Copied' : 'Click to copy outcome ID'"
+        @click="copyOutcomeIdToClipboard(outcome.id)"
+      >
+        {{ copiedOutcomeId === String(outcome.id) ? 'Copied' : `${outcome.id} - ${outcome.label}` }}
+      </button>
+    </div>
   </div>
 </template>
 

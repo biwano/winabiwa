@@ -79,8 +79,11 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 ### 3.3 Match Details (Side Panel)
 - **Features**:
   - Clicking on a match opens a side panel.
+  - The side panel header shows the match identifier (`matchId`) on the right side of the title in a very small font.
+  - The displayed `matchId` is copyable to clipboard from the UI.
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
+  - Under the odds chart, display all involved outcome identifiers with their labels in a small font (for example: `123456789 - Home`, `123456790 - Draw`, `123456791 - Away`).
   - Uses data from the `winamax_odds_history` table.
   - Displays the match tags on the chart:
     - All tags linked through `winamax_match_tags` must be rendered inside the chart using `VChart` (ECharts) options only.
@@ -93,10 +96,16 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ### 3.4 Assistant (Automatic Match Tagging)
 - **Endpoint**: `GET /api/assistant/run`
+- **Query Parameters**:
+  - `matchId` (optional): numeric Winamax match identifier.
+    - If omitted, the endpoint runs the standard batch flow on eligible live matches.
+    - If provided, the endpoint must scope computation to that single match only (no full live batch scan).
+    - The targeted match must still satisfy eligibility constraints used by the assistant pipeline (currently live-state processing).
 - **Goal**:
   - Analyze all live matches and automatically assign tags when predefined market/score conditions are met.
 - **Execution**:
   - The endpoint processes matches where `status = "LIVE"`.
+  - When `matchId` is provided, only that match is loaded and analyzed.
   - The endpoint is designed to be manually triggerable and scheduler-compatible (cron/job runner).
 - **Rule-Independent Analysis Pipeline (target refactor)**:
   - The assistant route must have a dedicated, reusable data-loading layer independent from any single rule.
@@ -108,6 +117,12 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Rule analyzers must not query Supabase directly; they only receive prepared data context and return tag decisions.
   - Tag persistence (upsert in `winamax_match_tags`) remains centralized after all rule analyzers run.
 - **Rule Set (v1 + v2 + v3)**:
+  - Favorite/outsider determination:
+    - The favorite must be determined once per match from the `main_bet_id` outcomes.
+    - Compare outcome odds at the timestamp closest to `winamax_matches.match_start`.
+    - The outcome with the lowest odd at that reference timestamp is the favorite.
+    - The outcome with the highest odd at that reference timestamp is the outsider.
+    - Rule analyzers must reuse this precomputed favorite/outsider identity and must not redefine favorite from the latest tick.
   - Rule name: `SIEGE`.
   - Condition:
     - Match score is exactly `0:0`.
@@ -137,6 +152,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - Number of matches tagged (global).
     - Number of matches tagged per rule (`SIEGE`, `TIRED`, `REVERSAL`, ...).
     - Number of tags created (or already existing/no-op).
+    - The summary must indicate whether execution was scoped (`matchId` mode) or global batch mode.
 
 ## 4. Database Schema
 
