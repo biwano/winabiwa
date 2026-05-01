@@ -21,6 +21,8 @@ export function isRuleCode(value: string): value is RuleCode {
 export interface MatchRow {
   id: number
   main_bet_id: number | null
+  match_start: string | null
+  sport_name: string | null
   score: string | null
   competitor1_name: string | null
   competitor2_name: string | null

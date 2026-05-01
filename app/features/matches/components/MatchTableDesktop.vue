@@ -61,15 +61,19 @@ function getFormattedDate(dateStr: string) {
         v-if="row.original.tags && row.original.tags.length > 0"
         class="flex flex-wrap gap-1"
       >
-        <UBadge
+        <span
           v-for="tag in row.original.tags"
-          :key="tag.id"
-          size="sm"
-          color="primary"
-          variant="subtle"
+          :key="`${tag.id}-${tag.assigned_at}`"
+          :title="getFormattedDate(tag.assigned_at)"
         >
-          {{ tag.code }}
-        </UBadge>
+          <UBadge
+            size="sm"
+            color="primary"
+            variant="subtle"
+          >
+            {{ tag.code }}
+          </UBadge>
+        </span>
       </div>
       <span
         v-else

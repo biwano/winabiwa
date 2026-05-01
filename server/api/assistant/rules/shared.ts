@@ -77,6 +77,45 @@ export function hasRatioDropInWindow(history: OddRow[], minDropRatio: number, wi
   return false
 }
 
+export function hasRatioRaiseInWindow(history: OddRow[], minRaiseRatio: number, windowMs: number): boolean {
+  if (history.length < 2) {
+    return false
+  }
+
+  const latest = history[history.length - 1]
+  if (!latest) {
+    return false
+  }
+
+  const latestTimestampMs = new Date(latest.timestamp).getTime()
+  if (Number.isNaN(latestTimestampMs)) {
+    return false
+  }
+
+  for (const point of history) {
+    if (point.timestamp === latest.timestamp || point.value <= 0) {
+      continue
+    }
+
+    const pointTimestampMs = new Date(point.timestamp).getTime()
+    if (Number.isNaN(pointTimestampMs)) {
+      continue
+    }
+
+    const ageMs = latestTimestampMs - pointTimestampMs
+    if (ageMs <= 0 || ageMs >= windowMs) {
+      continue
+    }
+
+    const raiseRatio = (latest.value - point.value) / point.value
+    if (raiseRatio > minRaiseRatio) {
+      return true
+    }
+  }
+
+  return false
+}
+
 export function pickFavoriteAndOutsiderOutcomeIds(
   outcomeIds: number[],
   oddsByOutcome: Record<number, OddRow[]>,

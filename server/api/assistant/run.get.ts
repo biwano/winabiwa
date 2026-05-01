@@ -95,6 +95,9 @@ async function fetchLiveDataContext(
     .select(`
       id,
       match_start,
+      sport:winamax_sports (
+        name
+      ),
       main_bet_id,
       score,
       competitor1_name,
@@ -134,6 +137,8 @@ async function fetchLiveDataContext(
   const liveMatchesRows: MatchRow[] = (liveMatches || []).map(match => ({
     id: match.id,
     main_bet_id: match.main_bet_id,
+    match_start: match.match_start,
+    sport_name: match.sport?.name || null,
     score: match.score,
     competitor1_name: match.competitor1_name,
     competitor2_name: match.competitor2_name,
@@ -321,7 +326,7 @@ export default defineEventHandler(async (event) => {
       if (analyzeSiege(match)) {
         matchIdsByRule[SIEGE_TAG_CODE].add(match.id)
       }
-      if (analyzeTired(match)) {
+      if (analyzeTired(match, now)) {
         matchIdsByRule[TIRED_TAG_CODE].add(match.id)
       }
       if (analyzeReversal(match)) {

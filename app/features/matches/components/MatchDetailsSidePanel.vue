@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { MatchTag, WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import type { MatchTag, MatchTagAssignmentRow, WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
 
 const props = defineProps<{
@@ -24,12 +24,36 @@ type MatchTagLink = {
   created_at: string
   tag: MatchTag | null
 }
-type ChartTagPoint = {
-  code: string
-  created_at: string
-}
-const chartTags = ref<ChartTagPoint[]>([])
+const matchTagLinks = ref<MatchTagLink[]>([])
 const pending = ref(false)
+
+const tagDetailRows = computed<MatchTagAssignmentRow[]>(() => {
+  const rows: MatchTagAssignmentRow[] = []
+  for (const link of matchTagLinks.value) {
+    if (!link.tag) continue
+    if (typeof link.tag.code !== 'string' || typeof link.tag.label !== 'string') continue
+    rows.push({
+      code: link.tag.code,
+      label: link.tag.label,
+      created_at: link.created_at
+    })
+  }
+  return rows
+})
+
+const chartTags = computed(() =>
+  tagDetailRows.value.map(row => ({
+    code: row.code,
+    created_at: row.created_at
+  }))
+)
+
+const showStandaloneTagList = computed(
+  () =>
+    tagDetailRows.value.length > 0
+    && !pending.value
+    && !(outcomes.value.length > 0 && oddsHistory.value.length > 0)
+)
 const copiedMatchId = ref(false)
 let copiedResetTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -52,48 +76,40 @@ function resetCopiedMatchIdUi(): void {
   }
 }
 
-function toChartTags(data: MatchTagLink[] | null): ChartTagPoint[] {
-  if (!data) return []
-  return data
-    .map((link) => {
-      if (!link.tag || typeof link.tag.code !== 'string') return null
-      return {
-        code: link.tag.code,
-        created_at: link.created_at
-      }
-    })
-    .filter((tag): tag is ChartTagPoint => tag !== null)
-}
-
-// Fetch outcomes and then their odds history
+// Fetch outcomes, odds history, and match tags
 watch(() => props.match, async (newMatch) => {
   resetCopiedMatchIdUi()
-  if (!newMatch?.main_bet_id) {
+  if (!newMatch) {
     outcomes.value = []
     oddsHistory.value = []
-    chartTags.value = []
+    matchTagLinks.value = []
     return
   }
 
   pending.value = true
   try {
-    const { data: outcomesData } = await client
-      .from('winamax_outcomes')
-      .select('*')
-      .eq('bet_id', newMatch.main_bet_id)
-
-    outcomes.value = outcomesData || []
-
-    if (outcomes.value.length > 0) {
-      const outcomeIds = outcomes.value.map(o => o.id)
-      const { data: historyData } = await client
-        .from('winamax_odds_history')
+    if (newMatch.main_bet_id) {
+      const { data: outcomesData } = await client
+        .from('winamax_outcomes')
         .select('*')
-        .in('outcome_id', outcomeIds)
-        .order('timestamp', { ascending: true })
+        .eq('bet_id', newMatch.main_bet_id)
 
-      oddsHistory.value = historyData || []
+      outcomes.value = outcomesData || []
+
+      if (outcomes.value.length > 0) {
+        const outcomeIds = outcomes.value.map(o => o.id)
+        const { data: historyData } = await client
+          .from('winamax_odds_history')
+          .select('*')
+          .in('outcome_id', outcomeIds)
+          .order('timestamp', { ascending: true })
+
+        oddsHistory.value = historyData || []
+      } else {
+        oddsHistory.value = []
+      }
     } else {
+      outcomes.value = []
       oddsHistory.value = []
     }
 
@@ -104,7 +120,7 @@ watch(() => props.match, async (newMatch) => {
       .order('created_at', { ascending: true })
 
     if (matchTagsError) throw matchTagsError
-    chartTags.value = toChartTags(matchTagsData)
+    matchTagLinks.value = matchTagsData || []
   } catch (error) {
     console.error('Error fetching data:', error)
   } finally {
@@ -172,6 +188,7 @@ onBeforeUnmount(() => {
               :odds-history="oddsHistory"
               :outcomes="outcomes"
               :tags="chartTags"
+              :tag-assignments="tagDetailRows"
             />
           </div>
           <div
@@ -195,6 +212,16 @@ onBeforeUnmount(() => {
           class="text-sm text-gray-500 italic"
         >
           No outcomes found for the main bet.
+        </div>
+
+        <div
+          v-if="showStandaloneTagList"
+          class="space-y-2"
+        >
+          <h3 class="text-sm font-semibold">
+            Tags
+          </h3>
+          <MatchTagAssignmentsList :rows="tagDetailRows" />
         </div>
       </div>
     </template>

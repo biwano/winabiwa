@@ -21,7 +21,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ### Scraper API (`/api/scraper`)
 
-Server routes that drive Winamax ingestion and related database maintenance are grouped under the **`/api/scraper`** path prefix (operational / scheduler-facing). Assistant tagging remains under **`/api/assistant`**.
+Server routes that drive Winamax ingestion and related database maintenance are grouped under the **`/api/scraper`** path prefix (operational / scheduler-facing).
 
 ### 3.1 Market Structure & Live Data Grabber
 - **Endpoint**: `GET /api/scraper/scrape`
@@ -72,12 +72,15 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Tags Column:
     - Desktop table includes a `Tags` column.
     - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
+    - Each tag badge uses the same chip styling as today (for example: small, primary subtle variant).
+    - On hover over a tag badge, show a tooltip (or equivalent accessible hint) with the tag assignment time from `winamax_match_tags.created_at`, formatted the same way as the `Start Time` column (locale datetime string, consistent with `match_start` rendering).
+    - Match list data loading must return `created_at` per tag association (join row), not only fields from `match_tags`, so the UI can show assignment time without an extra round trip.
     - If a match has no tags, the column renders an empty state (`-`).
   - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
     - Renders using `div` and flexbox only (not `UTable`).
     - Each match card displays:
       - First line: Match name and Sport badge.
-      - Second line: Start time, score, and Status badge.
+      - Second line: Start time, score, Status badge, and tag badges when present; tag badges use the same hover tooltip behavior for assignment time as the desktop table where applicable.
   - **Desktop View**: On larger screens, a `MatchTableDesktop` component is used for a standard tabular view.
 
 ### 3.3 Match Details (Side Panel)
@@ -88,6 +91,12 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Under the odds chart, display all involved outcome identifiers with their labels in a small font (for example: `123456789 - Home`, `123456790 - Draw`, `123456791 - Away`).
+  - Below the outcome identifiers, list all tags assigned to the match:
+    - For each row in `winamax_match_tags`, show the tag **code** (`match_tags.code`) and the assignment **time** (`winamax_match_tags.created_at`).
+    - Reuse the same **badge/chip** component and classes as the main list `Tags` column for the tag **code** (`match_tags.code`), and place the formatted **time** beside it on the same row.
+    - The time must use the **same datetime formatting** as the main table `Start Time` column (same locale string rules as `match_start`).
+    - Order tags by `created_at` ascending (consistent with chart markers).
+    - If there are no tags, omit the block or show an empty state consistent with the list (`-`).
   - Uses data from the `winamax_odds_history` table.
   - Displays the match tags on the chart:
     - All tags linked through `winamax_match_tags` must be rendered inside the chart using `VChart` (ECharts) options only.
@@ -136,9 +145,23 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - Add the `SIEGE` tag to the match.
   - Rule name: `TIRED`.
   - Condition:
-    - The outsider's odd drops by more than `8%`.
-    - The drop occurs within less than `10` minutes.
-    - Percent drop formula: `(older_odd - latest_odd) / older_odd`.
+    - The match must belong to a sport whose full match duration model is explicitly known by the assistant.
+    - The rule applies only after at least `70%` of the modeled match timeline has elapsed.
+    - Elapsed ratio is computed from `(now - winamax_matches.match_start) / modeled_total_duration`.
+    - If the sport duration model is unknown, the `TIRED` rule must be skipped for that match.
+    - Sport duration lookup uses the **exact sport name value** as provided by Winamax (no normalization/fuzzy matching).
+    - Initial modeled durations (exact keys):
+      - `Football`: `110 minutes` (`90 + 15 + 5`)
+      - `Basketball`: `68 minutes` (`48 + 15 + 5`)
+      - `Hockey sur glace`: `95 minutes` (`60 + 30 + 5`)
+      - `Handball`: `80 minutes` (`60 + 15 + 5`)
+      - `Rugby à XV`: `105 minutes` (`80 + 15 + 10`)
+      - `Rugby à XIII`: `100 minutes` (`80 + 10 + 10`)
+      - `Football américain`: `90 minutes` (`60 + 20 + 10`)
+      - `Futsal`: `60 minutes` (`40 + 15 + 5`)
+    - The outsider's odd rises by more than `8%`.
+    - The rise occurs within less than `10` minutes.
+    - Percent rise formula: `(latest_odd - older_odd) / older_odd`.
   - Action:
     - Add the `TIRED` tag to the match.
   - Rule name: `REVERSAL`.

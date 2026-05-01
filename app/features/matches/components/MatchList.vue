@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import type { WinamaxMatch, MatchFilters, MatchTag, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
+import type { WinamaxMatch, MatchFilters, MatchTag, MatchTagWithAssignment, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
 import dayjs from 'dayjs'
 
 interface MatchTagLink {
+  created_at: string
   tag: MatchTag | null
 }
 
@@ -105,8 +106,8 @@ watch(filters, (newVal, oldVal) => {
 
 const { data: matchesData, pending } = await useAsyncData('matches', async () => {
   const tagsSelection = filters.value.has_tags
-    ? 'winamax_match_tags!inner(tag:match_tags(*))'
-    : 'winamax_match_tags(tag:match_tags(*))'
+    ? 'winamax_match_tags!inner(created_at, tag:match_tags(*))'
+    : 'winamax_match_tags(created_at, tag:match_tags(*))'
 
   let query = client
     .from('winamax_matches')
@@ -152,12 +153,17 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
   }
 
   const matches: WinamaxMatch[] = (data || []).map((match: MatchListRow) => {
-    const tags = (match.winamax_match_tags || [])
-      .map(link => link.tag)
-      .filter((tag): tag is MatchTag => tag !== null)
+    const tags: MatchTagWithAssignment[] = (match.winamax_match_tags || [])
+      .map((link) => {
+        if (!link.tag) return null
+        return { ...link.tag, assigned_at: link.created_at }
+      })
+      .filter((tag): tag is MatchTagWithAssignment => tag !== null)
 
+    const { winamax_match_tags, ...rest } = match
+    void winamax_match_tags
     return {
-      ...match,
+      ...rest,
       tags
     }
   })

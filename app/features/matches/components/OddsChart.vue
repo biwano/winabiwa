@@ -10,7 +10,7 @@ import {
   MarkPointComponent
 } from 'echarts/components.js'
 import VChart from 'vue-echarts'
-import type { WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import type { MatchTagAssignmentRow, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
 
 use([
@@ -30,6 +30,7 @@ const props = defineProps<{
     code: string
     created_at: string
   }[]
+  tagAssignments?: MatchTagAssignmentRow[]
   title?: string
 }>()
 
@@ -235,9 +236,14 @@ onBeforeUnmount(() => {
         autoresize
       />
     </div>
+    <MatchTagAssignmentsList
+      v-if="tagAssignments && tagAssignments.length > 0"
+      :rows="tagAssignments"
+      class="pt-2 border-t border-gray-100 dark:border-gray-800"
+    />
     <div
       v-if="outcomesWithLabels.length > 0"
-      class="text-[10px] leading-4 text-gray-500 flex flex-col gap-0.5"
+      class="text-[10px] leading-4 text-gray-500 flex flex-col gap-0.5 pt-2 border-t border-gray-100 dark:border-gray-800"
     >
       <button
         v-for="outcome in outcomesWithLabels"

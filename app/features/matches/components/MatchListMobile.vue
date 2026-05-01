@@ -71,15 +71,19 @@ function getFormattedDate(dateStr: string) {
                   {{ match.status }}
                 </UBadge>
                 <template v-if="match.tags && match.tags.length > 0">
-                  <UBadge
+                  <span
                     v-for="tag in match.tags"
-                    :key="tag.id"
-                    size="sm"
-                    color="primary"
-                    variant="subtle"
+                    :key="`${tag.id}-${tag.assigned_at}`"
+                    :title="getFormattedDate(tag.assigned_at)"
                   >
-                    {{ tag.code }}
-                  </UBadge>
+                    <UBadge
+                      size="sm"
+                      color="primary"
+                      variant="subtle"
+                    >
+                      {{ tag.code }}
+                    </UBadge>
+                  </span>
                 </template>
                 <span
                   v-else
