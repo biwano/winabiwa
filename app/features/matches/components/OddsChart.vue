@@ -12,7 +12,7 @@ import {
 import VChart from 'vue-echarts'
 import type { MatchTagAssignmentRow, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
-import { getTagChartColor } from '~~/app/features/matches/utils/tag-colors.js'
+import { getTagChartBorderColor, getTagChartColor, getTagChartTextColor } from '~~/app/features/matches/utils/tag-colors.js'
 
 use([
   CanvasRenderer,
@@ -50,6 +50,8 @@ type TagPoint = {
   symbolSize: [number, number]
   itemStyle: {
     color: string
+    borderColor: string
+    borderWidth: number
   }
   label: {
     show: boolean
@@ -136,13 +138,15 @@ const option = computed(() => {
       symbol: 'roundRect',
       symbolSize,
       itemStyle: {
-        color: getTagChartColor(tag.code)
+        color: getTagChartColor(tag.code),
+        borderColor: getTagChartBorderColor(tag.code),
+        borderWidth: 1
       },
       label: {
         show: true,
-        color: '#ffffff',
+        color: getTagChartTextColor(tag.code),
         fontSize: 10,
-        fontWeight: 'bold',
+        fontWeight: '600',
         formatter: () => tag.code
       }
     }
