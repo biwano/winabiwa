@@ -10,11 +10,29 @@ export default defineEventHandler(async (event) => {
   try {
     const query = getQuery(event)
     const targetValue = typeof query.target === 'string' ? query.target : ''
+    const cleanupValue = query.cleanup
     if (targetValue !== 'live' && targetValue !== 'calendar') {
       throw createError({
         statusCode: 400,
         statusMessage: 'Missing or invalid `target` query parameter. Allowed values: live, calendar.'
       })
+    }
+    if (Array.isArray(cleanupValue)) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Invalid `cleanup` query parameter. Expected a single boolean value.'
+      })
+    }
+
+    let shouldCleanup = false
+    if (typeof cleanupValue === 'string' && cleanupValue.length > 0) {
+      if (cleanupValue !== 'true' && cleanupValue !== 'false') {
+        throw createError({
+          statusCode: 400,
+          statusMessage: 'Invalid `cleanup` query parameter. Allowed values: true, false.'
+        })
+      }
+      shouldCleanup = cleanupValue === 'true'
     }
 
     const target: WinamaxLiveTarget = targetValue
@@ -288,9 +306,36 @@ export default defineEventHandler(async (event) => {
       }
     }
 
+    let deletedStaleLiveMatchesCount = 0
+    const cleanupApplied = shouldCleanup && target === 'live'
+    if (cleanupApplied) {
+      const liveMatchIdsFromScrape = R.pipe(
+        nonNullNumericIdEntries(state.matches),
+        R.filter(([, match]) => match.status === 'LIVE'),
+        R.map(([id]) => id)
+      )
+
+      const staleLiveDeleteQuery = client
+        .from('winamax_matches')
+        .delete({ count: 'exact' })
+        .eq('status', 'LIVE')
+
+      const staleLiveDeleteResult = liveMatchIdsFromScrape.length === 0
+        ? await staleLiveDeleteQuery
+        : await staleLiveDeleteQuery.not('id', 'in', `(${liveMatchIdsFromScrape.join(',')})`)
+
+      checkError(staleLiveDeleteResult)
+      deletedStaleLiveMatchesCount = staleLiveDeleteResult.count || 0
+    }
+
     return {
       success: true,
       timestamp: now,
+      cleanup: {
+        requested: shouldCleanup,
+        applied: cleanupApplied,
+        deletedStaleLiveMatchesCount
+      },
       summary: {
         sports: countNonNull(state.sports),
         categories: countNonNull(state.categories),

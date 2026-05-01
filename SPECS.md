@@ -30,12 +30,20 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - Allowed values: `live` or `calendar`.
     - `target=calendar` sends socket payload `31:42["m",{"route":"calendar:24"}]`.
     - `target=live` sends socket payload `24:42["m",{"route":"live"}]`.
+  - `cleanup` (optional): boolean flag (`true` / `false`), default `false`.
+    - This parameter is never mandatory.
+    - When `cleanup=true`, stale live matches are removed after ingestion.
+    - Cleanup behavior only applies to runs where `target=live`.
+    - If provided with an invalid boolean value, the endpoint must return a client error response (`400`).
   - Any missing or invalid `target` value must return a client error response (`400`).
 - **Functionality**:
   - Performs the socket.io handshake to obtain a `sid` from Winamax.
   - Retrieves the market structure (sports, categories, tournaments, filters, bet categories) and match data.
   - Stores metadata, matches, bets, and outcomes in the database (upsert).
   - Historizes odds in the `winamax_odds_history` table on a 1-minute basis.
+  - If `cleanup=true` and `target=live`, after the scraped data has been injected into the database:
+    - Delete all existing rows in `winamax_matches` where `status = "LIVE"` and `id` is **not** present in the freshly scraped live match id set.
+    - This deletion step runs strictly after ingestion so that currently scraped live matches remain intact.
   - Uses object keys from the source as primary keys in the database.
 
 ### 3.2 Data Cleanup
@@ -159,9 +167,9 @@ Server routes that drive Winamax ingestion and related database maintenance are 
       - `Rugby à XIII`: `100 minutes` (`80 + 10 + 10`)
       - `Football américain`: `90 minutes` (`60 + 20 + 10`)
       - `Futsal`: `60 minutes` (`40 + 15 + 5`)
-    - The outsider's odd rises by more than `8%`.
-    - The rise occurs within less than `10` minutes.
-    - Percent rise formula: `(latest_odd - older_odd) / older_odd`.
+    - The outsider's odd drops by at least `8%`.
+    - The drop occurs within less than `10` minutes.
+    - Percent drop formula: `(older_odd - latest_odd) / older_odd`.
   - Action:
     - Add the `TIRED` tag to the match.
   - Rule name: `REVERSAL`.

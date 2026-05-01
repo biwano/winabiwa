@@ -1,7 +1,7 @@
-import { hasRatioRaiseInWindow } from './shared.js'
+import { hasRatioDropInWindow } from './shared.js'
 import type { MatchRow } from './types.js'
 
-const TIRED_MIN_RAISE_RATIO = 0.08
+const TIRED_MIN_DROP_RATIO = 0.08
 const TIRED_WINDOW_MS = 10 * 60 * 1000
 const TIRED_MIN_ELAPSED_RATIO = 0.7
 
@@ -65,5 +65,5 @@ export function analyzeTired(match: MatchRow, now: Date): boolean {
     return false
   }
 
-  return hasRatioRaiseInWindow(match.outsider.odds, TIRED_MIN_RAISE_RATIO, TIRED_WINDOW_MS)
+  return hasRatioDropInWindow(match.outsider.odds, TIRED_MIN_DROP_RATIO, TIRED_WINDOW_MS)
 }

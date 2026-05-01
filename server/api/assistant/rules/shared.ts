@@ -1,11 +1,20 @@
 import type { OddRow } from './types.js'
 
-export function hasAbsoluteDropInWindow(history: OddRow[], minDrop: number, windowMs: number): boolean {
+function pickLatestOdd(history: OddRow[]): OddRow | null {
+  return history[history.length - 1] || null
+}
+
+function hasPointMatchInWindow(
+  history: OddRow[],
+  windowMs: number,
+  shouldSkipPoint: (point: OddRow, latest: OddRow) => boolean,
+  isMatch: (point: OddRow, latest: OddRow) => boolean
+): boolean {
   if (history.length < 2) {
     return false
   }
 
-  const latest = history[history.length - 1]
+  const latest = pickLatestOdd(history)
   if (!latest) {
     return false
   }
@@ -15,105 +24,44 @@ export function hasAbsoluteDropInWindow(history: OddRow[], minDrop: number, wind
     return false
   }
 
-  for (const point of history) {
-    if (point.timestamp === latest.timestamp) {
-      continue
-    }
-
-    const pointTimestampMs = new Date(point.timestamp).getTime()
-    if (Number.isNaN(pointTimestampMs)) {
-      continue
-    }
-
-    const ageMs = latestTimestampMs - pointTimestampMs
-    if (ageMs <= 0 || ageMs >= windowMs) {
-      continue
-    }
-
-    if (point.value - latest.value >= minDrop) {
-      return true
-    }
+  const referenceTimestampMs = latestTimestampMs - windowMs
+  const point = pickOddClosestToReference(history, referenceTimestampMs)
+  if (!point) {
+    return false
   }
 
-  return false
+  if (point.timestamp === latest.timestamp || shouldSkipPoint(point, latest)) {
+    return false
+  }
+
+  return isMatch(point, latest)
+}
+
+export function hasAbsoluteDropInWindow(history: OddRow[], minDrop: number, windowMs: number): boolean {
+  return hasPointMatchInWindow(
+    history,
+    windowMs,
+    () => false,
+    (point, latest) => point.value - latest.value >= minDrop
+  )
 }
 
 export function hasRatioDropInWindow(history: OddRow[], minDropRatio: number, windowMs: number): boolean {
-  if (history.length < 2) {
-    return false
-  }
-
-  const latest = history[history.length - 1]
-  if (!latest) {
-    return false
-  }
-
-  const latestTimestampMs = new Date(latest.timestamp).getTime()
-  if (Number.isNaN(latestTimestampMs)) {
-    return false
-  }
-
-  for (const point of history) {
-    if (point.timestamp === latest.timestamp || point.value <= 0) {
-      continue
-    }
-
-    const pointTimestampMs = new Date(point.timestamp).getTime()
-    if (Number.isNaN(pointTimestampMs)) {
-      continue
-    }
-
-    const ageMs = latestTimestampMs - pointTimestampMs
-    if (ageMs <= 0 || ageMs >= windowMs) {
-      continue
-    }
-
-    const dropRatio = (point.value - latest.value) / point.value
-    if (dropRatio > minDropRatio) {
-      return true
-    }
-  }
-
-  return false
+  return hasPointMatchInWindow(
+    history,
+    windowMs,
+    point => point.value <= 0,
+    (point, latest) => (point.value - latest.value) / point.value >= minDropRatio
+  )
 }
 
 export function hasRatioRaiseInWindow(history: OddRow[], minRaiseRatio: number, windowMs: number): boolean {
-  if (history.length < 2) {
-    return false
-  }
-
-  const latest = history[history.length - 1]
-  if (!latest) {
-    return false
-  }
-
-  const latestTimestampMs = new Date(latest.timestamp).getTime()
-  if (Number.isNaN(latestTimestampMs)) {
-    return false
-  }
-
-  for (const point of history) {
-    if (point.timestamp === latest.timestamp || point.value <= 0) {
-      continue
-    }
-
-    const pointTimestampMs = new Date(point.timestamp).getTime()
-    if (Number.isNaN(pointTimestampMs)) {
-      continue
-    }
-
-    const ageMs = latestTimestampMs - pointTimestampMs
-    if (ageMs <= 0 || ageMs >= windowMs) {
-      continue
-    }
-
-    const raiseRatio = (latest.value - point.value) / point.value
-    if (raiseRatio > minRaiseRatio) {
-      return true
-    }
-  }
-
-  return false
+  return hasPointMatchInWindow(
+    history,
+    windowMs,
+    point => point.value <= 0,
+    (point, latest) => (latest.value - point.value) / point.value > minRaiseRatio
+  )
 }
 
 export function pickFavoriteAndOutsiderOutcomeIds(
@@ -149,12 +97,14 @@ export function pickFavoriteAndOutsiderOutcomeIds(
 }
 
 function pickOddClosestToReference(history: OddRow[], referenceTimestampMs: number): OddRow | null {
-  if (history.length === 0) {
+  const latest = pickLatestOdd(history)
+
+  if (!latest) {
     return null
   }
 
   if (Number.isNaN(referenceTimestampMs)) {
-    return history[history.length - 1] || null
+    return latest
   }
 
   let closestOdd: OddRow | null = null
