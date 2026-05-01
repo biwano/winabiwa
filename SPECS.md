@@ -51,7 +51,11 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - This filter is disabled by default.
     - When enabled, only matches linked to one or more entries in `match_tags` are displayed.
   - Outcome Filtering: A toggle to show only matches that have at least one outcome. This filter is enabled by default.
-  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, tagged toggle, outcome toggle) and pagination are bidirectionally synchronized with URL query parameters.
+  - Starting Soon Filtering: A toggle labeled `Show only matches that start soon`.
+    - This filter is enabled by default.
+    - When enabled, only matches whose `match_start` is less than or equal to the current time plus `1 hour` are displayed.
+    - This includes matches that already started and matches that will start within the next hour.
+  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, tagged toggle, outcome toggle, starting soon toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
   - Tags Column:

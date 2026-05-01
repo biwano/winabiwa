@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { WinamaxMatch, MatchFilters, MatchTag, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
+import dayjs from 'dayjs'
 
 interface MatchTagLink {
   tag: MatchTag | null
@@ -24,6 +25,7 @@ function getInitialFilters(): MatchFilters {
     tournament_id: route.query.tournament_id ? Number(route.query.tournament_id) : null,
     search: typeof route.query.search === 'string' ? route.query.search : '',
     live_only: route.query.live_only === 'true',
+    starts_soon: route.query.starts_soon === undefined ? true : route.query.starts_soon === 'true',
     has_tags: route.query.has_tags === 'true',
     has_outcomes: route.query.has_outcomes === undefined ? true : route.query.has_outcomes === 'true'
   }
@@ -43,6 +45,8 @@ watch([filters, page], ([newFilters, newPage]) => {
   if (newFilters.search) query.search = newFilters.search
   // Only add live_only to query if it's NOT the default (false)
   if (newFilters.live_only) query.live_only = 'true'
+  // Only add starts_soon to query if it's NOT the default (true)
+  if (newFilters.starts_soon === false) query.starts_soon = 'false'
   // Only add has_tags to query if it's NOT the default (false)
   if (newFilters.has_tags) query.has_tags = 'true'
   // Only add has_outcomes to query if it's NOT the default (true)
@@ -70,6 +74,7 @@ watch(() => route.query, (newQuery) => {
     tournament_id: newQuery.tournament_id ? Number(newQuery.tournament_id) : null,
     search: typeof newQuery.search === 'string' ? newQuery.search : '',
     live_only: newQuery.live_only === 'true',
+    starts_soon: newQuery.starts_soon === undefined ? true : newQuery.starts_soon === 'true',
     has_tags: newQuery.has_tags === 'true',
     has_outcomes: newQuery.has_outcomes === undefined ? true : newQuery.has_outcomes === 'true'
   }
@@ -126,6 +131,10 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
 
   if (filters.value.live_only) {
     query = query.eq('status', 'LIVE')
+  }
+
+  if (filters.value.starts_soon) {
+    query = query.lte('match_start', dayjs().add(1, 'hour').toISOString())
   }
 
   if (filters.value.has_outcomes) {
