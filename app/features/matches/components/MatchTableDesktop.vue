@@ -13,11 +13,10 @@ const emit = defineEmits<{
 const columns = [
   { accessorKey: 'title', header: 'Match', id: 'title' },
   { accessorKey: 'sport', header: 'Sport', id: 'sport' },
-  { accessorKey: 'tournament', header: 'Tournament', id: 'tournament' },
-  { accessorKey: 'tags', header: 'Tags', id: 'tags' },
   { accessorKey: 'score', header: 'Score', id: 'score' },
   { accessorKey: 'match_start', header: 'Start Time', id: 'match_start' },
-  { accessorKey: 'status', header: 'Status', id: 'status' }
+  { accessorKey: 'status', header: 'Status', id: 'status' },
+  { accessorKey: 'tags', header: 'Tags', id: 'tags' }
 ]
 
 function getFormattedDate(dateStr: string) {
@@ -49,12 +48,6 @@ function getFormattedDate(dateStr: string) {
       >
         {{ row.original.sport?.name }}
       </UBadge>
-    </template>
-
-    <template #tournament-cell="{ row }">
-      <span class="text-sm text-gray-500">
-        {{ row.original.tournament?.name }}
-      </span>
     </template>
 
     <template #score-cell="{ row }">

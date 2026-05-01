@@ -58,8 +58,15 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - URL Synchronization: All filters (sport, category, tournament, search, live toggle, tagged toggle, outcome toggle, starting soon toggle) and pagination are bidirectionally synchronized with URL query parameters.
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
+  - Desktop Table Columns (ordered):
+    - `Match`
+    - `Sport`
+    - `Score`
+    - `Start Time`
+    - `Status`
+    - `Tags`
   - Tags Column:
-    - Desktop table includes a `Tags` column.
+    - Desktop table includes a `Tags` column positioned immediately after `Status`.
     - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
     - If a match has no tags, the column renders an empty state (`-`).
   - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
