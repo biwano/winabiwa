@@ -66,7 +66,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
     - `Status`
     - `Tags`
   - Tags Column:
-    - Desktop table includes a `Tags` column positioned immediately after `Status`.
+    - Desktop table includes a `Tags` column.
     - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
     - If a match has no tags, the column renders an empty state (`-`).
   - **Mobile Optimization**: On small screens, a dedicated `MatchListMobile` component is used (replacing the table with a list of cards):
@@ -82,6 +82,14 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Uses data from the `winamax_odds_history` table.
+  - Displays the match tags on the chart:
+    - All tags linked through `winamax_match_tags` must be rendered inside the chart using `VChart` (ECharts) options only.
+    - Do not use external HTML/CSS overlays for tag rendering.
+    - Tags are rendered from tag `code` values using native chart option primitives (for example: `graphic`, `markPoint`, `markLine`, or equivalent supported option blocks).
+    - Tag placement must be driven by each tag's `created_at` timestamp:
+      - Each rendered tag marker/label is positioned on the chart time axis at its own `created_at` value.
+      - If multiple tags share the same timestamp, all of them must remain visible (for example via stacking/offset strategy).
+    - If no tag is linked to the match, no tag-specific chart option is rendered.
 
 ### 3.4 Assistant (Automatic Match Tagging)
 - **Endpoint**: `GET /api/assistant/run`

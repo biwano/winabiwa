@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import type { MatchTag, WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
 
 const props = defineProps<{
   match: WinamaxMatch | null
@@ -19,13 +19,36 @@ const client = useSupabaseClient()
 
 const outcomes = ref<WinamaxOutcome[]>([])
 const oddsHistory = ref<WinamaxOddsHistory[]>([])
+type MatchTagLink = {
+  created_at: string
+  tag: MatchTag | null
+}
+type ChartTagPoint = {
+  code: string
+  created_at: string
+}
+const chartTags = ref<ChartTagPoint[]>([])
 const pending = ref(false)
+
+function toChartTags(data: MatchTagLink[] | null): ChartTagPoint[] {
+  if (!data) return []
+  return data
+    .map((link) => {
+      if (!link.tag || typeof link.tag.code !== 'string') return null
+      return {
+        code: link.tag.code,
+        created_at: link.created_at
+      }
+    })
+    .filter((tag): tag is ChartTagPoint => tag !== null)
+}
 
 // Fetch outcomes and then their odds history
 watch(() => props.match, async (newMatch) => {
   if (!newMatch?.main_bet_id) {
     outcomes.value = []
     oddsHistory.value = []
+    chartTags.value = []
     return
   }
 
@@ -50,6 +73,15 @@ watch(() => props.match, async (newMatch) => {
     } else {
       oddsHistory.value = []
     }
+
+    const { data: matchTagsData, error: matchTagsError } = await client
+      .from('winamax_match_tags')
+      .select('created_at, tag:match_tags(*)')
+      .eq('match_id', newMatch.id)
+      .order('created_at', { ascending: true })
+
+    if (matchTagsError) throw matchTagsError
+    chartTags.value = toChartTags(matchTagsData)
   } catch (error) {
     console.error('Error fetching data:', error)
   } finally {
@@ -101,6 +133,7 @@ watch(() => props.match, async (newMatch) => {
             <OddsChart
               :odds-history="oddsHistory"
               :outcomes="outcomes"
+              :tags="chartTags"
             />
           </div>
           <div

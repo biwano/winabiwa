@@ -6,7 +6,8 @@ import {
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  MarkPointComponent
 } from 'echarts/components.js'
 import VChart from 'vue-echarts'
 import type { WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
@@ -17,12 +18,17 @@ use([
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  MarkPointComponent
 ])
 
 const props = defineProps<{
   oddsHistory: WinamaxOddsHistory[]
   outcomes: WinamaxOutcome[]
+  tags: {
+    code: string
+    created_at: string
+  }[]
   title?: string
 }>()
 
@@ -34,13 +40,83 @@ type TooltipParam = {
   seriesName: string
 }
 
+type TagPoint = {
+  coord: [number, number]
+  value: string
+  symbol: string
+  symbolSize: [number, number]
+  itemStyle: {
+    color: string
+  }
+  label: {
+    show: boolean
+    color: string
+    fontSize: number
+    fontWeight: string
+    formatter: () => string
+  }
+}
+
+type LineSeries = {
+  name: string
+  type: 'line'
+  smooth: boolean
+  data: [number, number][]
+  lineStyle: {
+    width: number
+  }
+  emphasis: {
+    focus: 'series'
+  }
+  markPoint?: {
+    symbolKeepAspect: boolean
+    data: TagPoint[]
+  }
+}
+
 const option = computed(() => {
   const sortedHistory = [...props.oddsHistory].sort((a, b) =>
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   )
+  const values = sortedHistory.map(item => item.value)
+  const minValue = values.length > 0 ? Math.min(...values) : 0
+  const maxValue = values.length > 0 ? Math.max(...values) : 1
+  const valueRange = Math.max(maxValue - minValue, 0.1)
+  const tagLevelStep = Math.max(valueRange * 0.1, 0.05)
 
-  const series = props.outcomes.map((outcome) => {
-    const data = sortedHistory
+  const tagTimestampCount = new Map<number, number>()
+  const tagPoints: TagPoint[] = props.tags.map((tag) => {
+    const timestamp = new Date(tag.created_at).getTime()
+    const currentLevel = tagTimestampCount.get(timestamp) || 0
+    tagTimestampCount.set(timestamp, currentLevel + 1)
+    const coord: [number, number] = [timestamp, maxValue + tagLevelStep * (currentLevel + 1)]
+    const symbolSize: [number, number] = [70, 22]
+
+    return {
+      coord,
+      value: tag.code,
+      symbol: 'roundRect',
+      symbolSize,
+      itemStyle: {
+        color: '#d946ef'
+      },
+      label: {
+        show: true,
+        color: '#ffffff',
+        fontSize: 10,
+        fontWeight: 'bold',
+        formatter: () => tag.code
+      }
+    }
+  })
+  console.log('tagPoints', tagPoints)
+  const maxTagStack = tagTimestampCount.size > 0
+    ? Math.max(...Array.from(tagTimestampCount.values()))
+    : 0
+  const yAxisMax = maxValue + tagLevelStep * (maxTagStack + 1)
+
+  const series: LineSeries[] = props.outcomes.map((outcome) => {
+    const data: [number, number][] = sortedHistory
       .filter(item => item.outcome_id === outcome.id)
       .map(item => [new Date(item.timestamp).getTime(), item.value])
 
@@ -57,6 +133,16 @@ const option = computed(() => {
       }
     }
   })
+
+  if (series.length > 0 && tagPoints.length > 0) {
+    const firstSeries = series[0]
+    if (firstSeries) {
+      firstSeries.markPoint = {
+        symbolKeepAspect: true,
+        data: tagPoints
+      }
+    }
+  }
 
   return {
     title: {
@@ -93,7 +179,8 @@ const option = computed(() => {
     },
     yAxis: {
       type: 'value',
-      scale: true
+      scale: true,
+      max: yAxisMax
     },
     series
   }
