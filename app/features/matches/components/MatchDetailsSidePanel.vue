@@ -26,6 +26,7 @@ type MatchTagLink = {
 }
 const matchTagLinks = ref<MatchTagLink[]>([])
 const pending = ref(false)
+const showMatchNulOdds = ref(true)
 
 const tagDetailRows = computed<MatchTagAssignmentRow[]>(() => {
   const rows: MatchTagAssignmentRow[] = []
@@ -47,6 +48,20 @@ const chartTags = computed(() =>
     created_at: row.created_at
   }))
 )
+
+const hasMatchNulOutcome = computed(() =>
+  outcomes.value.some(outcome => outcome.label?.trim().toLowerCase() === 'match nul')
+)
+
+const visibleOutcomes = computed(() => {
+  if (showMatchNulOdds.value) return outcomes.value
+  return outcomes.value.filter(outcome => outcome.label?.trim().toLowerCase() !== 'match nul')
+})
+
+const visibleOddsHistory = computed(() => {
+  const visibleOutcomeIds = new Set(visibleOutcomes.value.map(outcome => outcome.id))
+  return oddsHistory.value.filter(item => visibleOutcomeIds.has(item.outcome_id))
+})
 
 const showStandaloneTagList = computed(
   () =>
@@ -79,6 +94,7 @@ function resetCopiedMatchIdUi(): void {
 // Fetch outcomes, odds history, and match tags
 watch(() => props.match, async (newMatch) => {
   resetCopiedMatchIdUi()
+  showMatchNulOdds.value = true
   if (!newMatch) {
     outcomes.value = []
     oddsHistory.value = []
@@ -183,13 +199,22 @@ onBeforeUnmount(() => {
           v-if="outcomes.length > 0"
           class="space-y-4"
         >
-          <div v-if="oddsHistory.length > 0">
+          <div
+            v-if="hasMatchNulOutcome"
+            class="pb-1"
+          >
+            <UCheckbox
+              v-model="showMatchNulOdds"
+              label="Show Match nul odds"
+            />
+          </div>
+          <div v-if="visibleOddsHistory.length > 0">
             <h3 class="text-sm font-semibold mb-2">
               Odds Evolution
             </h3>
             <OddsChart
-              :odds-history="oddsHistory"
-              :outcomes="outcomes"
+              :odds-history="visibleOddsHistory"
+              :outcomes="visibleOutcomes"
               :tags="chartTags"
               :tag-assignments="tagDetailRows"
             />

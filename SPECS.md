@@ -101,6 +101,11 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - The side panel header shows the match identifier (`matchId`) on the right side of the title in a very small font.
   - The displayed `matchId` is copyable to clipboard from the UI.
   - The side panel displays the current match score (`winamax_matches.score`) when available.
+  - A checkbox control is displayed in the match details panel to toggle visibility of the `Match nul` outcome odds on the chart.
+    - The checkbox is enabled (`true`) by default.
+    - The checkbox is rendered only when a `Match nul` outcome exists in the currently displayed odds set.
+    - When enabled, `Match nul` odds are displayed (if that outcome exists for the selected market).
+    - When disabled, the `Match nul` series is hidden from the chart while other outcome series remain visible.
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Under the odds chart, display all involved outcome identifiers with their labels in a small font (for example: `123456789 - Home`, `123456790 - Draw`, `123456791 - Away`).
