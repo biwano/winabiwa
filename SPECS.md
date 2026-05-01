@@ -19,8 +19,12 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
 
 ## 3. Core Features
 
+### Scraper API (`/api/scraper`)
+
+Server routes that drive Winamax ingestion and related database maintenance are grouped under the **`/api/scraper`** path prefix (operational / scheduler-facing). Assistant tagging remains under **`/api/assistant`**.
+
 ### 3.1 Market Structure & Live Data Grabber
-- **Endpoint**: `GET /api/live`
+- **Endpoint**: `GET /api/scraper/scrape`
 - **Query Parameters**:
   - `target` (required): determines which Winamax route is fetched.
     - Allowed values: `live` or `calendar`.
@@ -35,7 +39,7 @@ Winabiwa is a web-based application that monitors match ratings by querying the 
   - Uses object keys from the source as primary keys in the database.
 
 ### 3.2 Data Cleanup
-- **Endpoint**: `GET /api/cleanup`
+- **Endpoint**: `GET /api/scraper/cleanup`
 - **Functionality**:
   - Deletes matches from `winamax_matches` that started more than 3 hours ago.
   - Relies on database-level `ON DELETE CASCADE` to remove associated bets, outcomes, and odds history.

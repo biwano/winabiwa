@@ -1,7 +1,7 @@
 import {
   fetchWinamaxLiveData,
   type WinamaxLiveTarget
-} from '../../utils/winamax/live.js'
+} from '../../../utils/winamax/live.js'
 import { serverSupabaseServiceRole } from '#supabase/server'
 import type { PostgrestError } from '@supabase/supabase-js'
 import * as R from 'remeda'

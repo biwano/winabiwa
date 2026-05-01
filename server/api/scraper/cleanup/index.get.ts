@@ -1,12 +1,13 @@
 import { serverSupabaseServiceRole } from '#supabase/server'
 
+const THREE_HOURS_MS = 3 * 60 * 60 * 1000
+
 export default defineEventHandler(async (event) => {
   try {
     const client = serverSupabaseServiceRole(event)
     const now = new Date()
-    const threshold = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString()
+    const threshold = new Date(now.getTime() - THREE_HOURS_MS).toISOString()
 
-    // Delete matches older than 24 hours
     const { error, count } = await client
       .from('winamax_matches')
       .delete({ count: 'exact' })
