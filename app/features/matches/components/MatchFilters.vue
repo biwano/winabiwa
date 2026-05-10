@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MatchFilters, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
+import { MATCH_NUL_OUTCOME_LABEL } from '~~/app/features/matches/constants/outcomes.js'
 
 const props = defineProps<{
   modelValue: MatchFilters
@@ -22,6 +23,10 @@ watch(() => props.modelValue, (newVal) => {
 watch(filters, (newVal) => {
   emit('update:modelValue', { ...newVal })
 }, { deep: true })
+
+watch(() => filters.value.live_only, (live) => {
+  if (!live) filters.value.min_odd = null
+})
 
 const client = useSupabaseClient()
 
@@ -108,10 +113,20 @@ function resetFilters() {
     tournament_id: null,
     search: '',
     live_only: false,
+    min_odd: null,
     starts_soon: true,
     has_tags: false,
     has_outcomes: true
   }
+}
+
+function setMinOddFromInput(raw: string | number | null | undefined): void {
+  if (raw === '' || raw === null || raw === undefined) {
+    filters.value.min_odd = null
+    return
+  }
+  const n = typeof raw === 'number' ? raw : parseFloat(String(raw))
+  filters.value.min_odd = Number.isFinite(n) && n > 0 ? n : null
 }
 </script>
 
@@ -146,7 +161,7 @@ function resetFilters() {
       />
 
       <UButton
-        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || filters.live_only || !filters.starts_soon || filters.has_tags || !filters.has_outcomes"
+        v-if="filters.sport_id || filters.category_id || filters.tournament_id || filters.search || filters.live_only || filters.min_odd != null || !filters.starts_soon || filters.has_tags || !filters.has_outcomes"
         icon="i-lucide-x"
         color="neutral"
         variant="ghost"
@@ -154,10 +169,20 @@ function resetFilters() {
       />
     </div>
 
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <UCheckbox
         v-model="filters.live_only"
         label="Show only live matches"
+      />
+      <UInput
+        v-if="filters.live_only"
+        :model-value="filters.min_odd == null ? '' : String(filters.min_odd)"
+        type="number"
+        step="0.01"
+        min="1"
+        :placeholder="`Min. odd (excl. ${MATCH_NUL_OUTCOME_LABEL})`"
+        class="w-52"
+        @update:model-value="setMinOddFromInput"
       />
       <UCheckbox
         v-model="filters.starts_soon"

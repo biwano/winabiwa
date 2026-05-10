@@ -34,6 +34,8 @@ export interface MatchFilters {
   category_id?: number | null
   search?: string
   live_only?: boolean
+  /** When set with live_only, keeps matches where every non–match nul outcome's latest odd is >= this value. */
+  min_odd?: number | null
   starts_soon?: boolean
   has_tags?: boolean
   has_outcomes?: boolean

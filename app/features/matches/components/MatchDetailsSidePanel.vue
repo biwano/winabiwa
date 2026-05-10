@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { MatchTag, MatchTagAssignmentRow, WinamaxMatch, WinamaxOutcome, WinamaxOddsHistory } from '~~/app/types/database.friendly.types'
+import { MATCH_NUL_OUTCOME_LABEL, isMatchNulOutcome } from '~~/app/features/matches/constants/outcomes.js'
 import { copyTextToClipboard } from '~~/app/features/matches/utils/clipboard.js'
 
 const props = defineProps<{
@@ -50,12 +51,12 @@ const chartTags = computed(() =>
 )
 
 const hasMatchNulOutcome = computed(() =>
-  outcomes.value.some(outcome => outcome.label?.trim().toLowerCase() === 'match nul')
+  outcomes.value.some(outcome => isMatchNulOutcome(outcome.label))
 )
 
 const visibleOutcomes = computed(() => {
   if (showMatchNulOdds.value) return outcomes.value
-  return outcomes.value.filter(outcome => outcome.label?.trim().toLowerCase() !== 'match nul')
+  return outcomes.value.filter(outcome => !isMatchNulOutcome(outcome.label))
 })
 
 const visibleOddsHistory = computed(() => {
@@ -205,7 +206,7 @@ onBeforeUnmount(() => {
           >
             <UCheckbox
               v-model="showMatchNulOdds"
-              label="Show Match nul odds"
+              :label="`Show ${MATCH_NUL_OUTCOME_LABEL} odds`"
             />
           </div>
           <div v-if="visibleOddsHistory.length > 0">

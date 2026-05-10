@@ -63,6 +63,14 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - Live Filtering: A toggle to show only live matches (`status = "LIVE"`).
     - This filter is disabled by default.
     - When enabled, only matches currently in live state are displayed.
+  - **Minimum odd (live only)**: When live filtering is enabled, an optional numeric field sets a minimum odd for the main bet.
+    - A match is shown only if **every** outcome on `main_bet_id` **other than** the draw outcome has a **latest** odds sample in `winamax_odds_history` with `value >=` the configured minimum (most recent row per outcome by `timestamp`).
+    - The draw outcome is identified by the canonical Winamax outcome label `match nul` (trimmed, case-insensitive). That outcome’s odd is **not** considered for this filter.
+    - If there are no non-draw outcomes on the main bet, the match is not excluded by this rule alone.
+    - If a non-draw outcome has no odds history, the match fails the filter.
+    - Clearing the field or entering a non-positive value disables the filter.
+    - When the filter is active, matching rows are loaded in chunked ranges (with an upper bound on total rows fetched), filtered in memory, then paginated so the total count and pages reflect the filtered set.
+  - **Canonical draw label**: Application code treats the 1X2 draw outcome label as the string `match nul` via a shared constant (`MATCH_NUL_OUTCOME_LABEL`) and helper (`isMatchNulOutcome`) under `app/features/matches/constants/outcomes.ts`, so list filtering and match-details chart toggles stay aligned with Winamax labeling.
   - Tagged Filtering: A toggle to show only matches that have at least one tag in `winamax_match_tags`.
     - This filter is disabled by default.
     - When enabled, only matches linked to one or more entries in `match_tags` are displayed.
@@ -71,7 +79,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - This filter is enabled by default.
     - When enabled, only matches whose `match_start` is less than or equal to the current time plus `1 hour` are displayed.
     - This includes matches that already started and matches that will start within the next hour.
-  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, tagged toggle, outcome toggle, starting soon toggle) and pagination are bidirectionally synchronized with URL query parameters.
+  - URL Synchronization: All filters (sport, category, tournament, search, live toggle, optional `min_odd` when live-only is on and positive, tagged toggle, outcome toggle, starting soon toggle) and pagination are bidirectionally synchronized with URL query parameters. Disabling live-only clears the minimum-odd field in the UI (and drops `min_odd` from the URL on the next sync).
   - Pagination: The list is paginated to handle large numbers of matches.
   - Real-time: List updates when new data is grabbed.
   - Desktop Table Columns (ordered):
@@ -101,11 +109,11 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - The side panel header shows the match identifier (`matchId`) on the right side of the title in a very small font.
   - The displayed `matchId` is copyable to clipboard from the UI.
   - The side panel displays the current match score (`winamax_matches.score`) when available.
-  - A checkbox control is displayed in the match details panel to toggle visibility of the `Match nul` outcome odds on the chart.
+  - A checkbox control is displayed in the match details panel to toggle visibility of the draw outcome (`match nul` label) odds on the chart.
     - The checkbox is enabled (`true`) by default.
-    - The checkbox is rendered only when a `Match nul` outcome exists in the currently displayed odds set.
-    - When enabled, `Match nul` odds are displayed (if that outcome exists for the selected market).
-    - When disabled, the `Match nul` series is hidden from the chart while other outcome series remain visible.
+    - The checkbox is rendered only when an outcome whose label matches the canonical draw label `match nul` (trimmed, case-insensitive; same constant as the match list filter) exists in the currently displayed odds set.
+    - When enabled, that outcome’s odds are displayed (if it exists for the selected market).
+    - When disabled, that outcome’s series is hidden from the chart while other outcome series remain visible.
   - Displays a link to the match on Winamax (`https://www.winamax.fr/paris-sportifs/match/{id}`) with `target="_blank"`.
   - Displays a chart showing the evolution of the associated odds over time.
   - Under the odds chart, display all involved outcome identifiers with their labels in a small font (for example: `123456789 - Home`, `123456790 - Draw`, `123456791 - Away`).

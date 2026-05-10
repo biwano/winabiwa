@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import type { WinamaxMatch, MatchFilters, MatchTag, MatchTagWithAssignment, WinamaxSport, WinamaxCategory, WinamaxTournament } from '~~/app/types/database.friendly.types'
+import { filterMatchesByMinOddExcludingMatchNul } from '~~/app/features/matches/utils/filter-matches-by-min-odd-non-match-nul.js'
+import { parseLiveOnlyAndMinOddFromRouteQuery } from '~~/app/features/matches/utils/parse-live-min-odd-from-route-query.js'
 import dayjs from 'dayjs'
+
+/** Upper bound on rows loaded when applying live min-odd filter (chunked range requests). */
+const LIVE_MIN_ODD_FETCH_MAX_ROWS = 5000
+const LIVE_MIN_ODD_CHUNK_SIZE = 500
 
 interface MatchTagLink {
   created_at: string
@@ -19,13 +25,20 @@ const client = useSupabaseClient()
 const route = useRoute()
 const router = useRouter()
 
+function activeMinOddFromFilters(f: MatchFilters): number | null {
+  if (f.live_only === true && f.min_odd != null && f.min_odd > 0) return f.min_odd
+  return null
+}
+
 function getInitialFilters(): MatchFilters {
+  const { live_only, min_odd } = parseLiveOnlyAndMinOddFromRouteQuery(route.query)
   return {
     sport_id: route.query.sport_id ? Number(route.query.sport_id) : null,
     category_id: route.query.category_id ? Number(route.query.category_id) : null,
     tournament_id: route.query.tournament_id ? Number(route.query.tournament_id) : null,
     search: typeof route.query.search === 'string' ? route.query.search : '',
-    live_only: route.query.live_only === 'true',
+    live_only,
+    min_odd,
     starts_soon: route.query.starts_soon === undefined ? true : route.query.starts_soon === 'true',
     has_tags: route.query.has_tags === 'true',
     has_outcomes: route.query.has_outcomes === undefined ? true : route.query.has_outcomes === 'true'
@@ -46,6 +59,9 @@ watch([filters, page], ([newFilters, newPage]) => {
   if (newFilters.search) query.search = newFilters.search
   // Only add live_only to query if it's NOT the default (false)
   if (newFilters.live_only) query.live_only = 'true'
+  if (newFilters.live_only && newFilters.min_odd != null && newFilters.min_odd > 0) {
+    query.min_odd = String(newFilters.min_odd)
+  }
   // Only add starts_soon to query if it's NOT the default (true)
   if (newFilters.starts_soon === false) query.starts_soon = 'false'
   // Only add has_tags to query if it's NOT the default (false)
@@ -69,12 +85,14 @@ watch([filters, page], ([newFilters, newPage]) => {
 
 // Sync local state when URL query changes (e.g. back/forward button)
 watch(() => route.query, (newQuery) => {
+  const { live_only, min_odd } = parseLiveOnlyAndMinOddFromRouteQuery(newQuery)
   const newFilters = {
     sport_id: newQuery.sport_id ? Number(newQuery.sport_id) : null,
     category_id: newQuery.category_id ? Number(newQuery.category_id) : null,
     tournament_id: newQuery.tournament_id ? Number(newQuery.tournament_id) : null,
     search: typeof newQuery.search === 'string' ? newQuery.search : '',
-    live_only: newQuery.live_only === 'true',
+    live_only,
+    min_odd,
     starts_soon: newQuery.starts_soon === undefined ? true : newQuery.starts_soon === 'true',
     has_tags: newQuery.has_tags === 'true',
     has_outcomes: newQuery.has_outcomes === undefined ? true : newQuery.has_outcomes === 'true'
@@ -105,51 +123,80 @@ watch(filters, (newVal, oldVal) => {
 }, { deep: true })
 
 const { data: matchesData, pending } = await useAsyncData('matches', async () => {
+  const activeMinOdd = activeMinOddFromFilters(filters.value)
+  const applyMinOdd = activeMinOdd !== null
+
   const tagsSelection = filters.value.has_tags
     ? 'winamax_match_tags!inner(created_at, tag:match_tags(*))'
     : 'winamax_match_tags(created_at, tag:match_tags(*))'
 
-  let query = client
-    .from('winamax_matches')
-    .select(`*, sport:winamax_sports(*), category:winamax_categories(*), tournament:winamax_tournaments(*), ${tagsSelection}`, { count: 'exact' })
-    .order('match_start', { ascending: false })
+  function createMatchesQuery() {
+    let q = client
+      .from('winamax_matches')
+      .select(`*, sport:winamax_sports(*), category:winamax_categories(*), tournament:winamax_tournaments(*), ${tagsSelection}`, { count: 'exact' })
+      .order('match_start', { ascending: false })
 
-  if (filters.value.sport_id) {
-    query = query.eq('sport_id', filters.value.sport_id)
-  }
+    if (filters.value.sport_id) {
+      q = q.eq('sport_id', filters.value.sport_id)
+    }
 
-  if (filters.value.category_id) {
-    query = query.eq('category_id', filters.value.category_id)
-  }
+    if (filters.value.category_id) {
+      q = q.eq('category_id', filters.value.category_id)
+    }
 
-  if (filters.value.tournament_id) {
-    query = query.eq('tournament_id', filters.value.tournament_id)
-  }
+    if (filters.value.tournament_id) {
+      q = q.eq('tournament_id', filters.value.tournament_id)
+    }
 
-  if (filters.value.search) {
-    query = query.ilike('title', `%${filters.value.search}%`)
-  }
+    if (filters.value.search) {
+      q = q.ilike('title', `%${filters.value.search}%`)
+    }
 
-  if (filters.value.live_only) {
-    query = query.eq('status', 'LIVE')
-  }
+    if (filters.value.live_only) {
+      q = q.eq('status', 'LIVE')
+    }
 
-  if (filters.value.starts_soon) {
-    query = query.lte('match_start', dayjs().add(1, 'hour').toISOString())
-  }
+    if (filters.value.starts_soon) {
+      q = q.lte('match_start', dayjs().add(1, 'hour').toISOString())
+    }
 
-  if (filters.value.has_outcomes) {
-    query = query.not('main_bet_id', 'is', null)
+    if (filters.value.has_outcomes) {
+      q = q.not('main_bet_id', 'is', null)
+    }
+
+    return q
   }
 
   const start = (page.value - 1) * itemsPerPage
   const end = start + itemsPerPage - 1
 
-  const { data, count, error } = await query.range(start, end)
+  let data: MatchListRow[] | null = null
+  let count: number | null = null
 
-  if (error) {
-    console.error('Error fetching matches:', error)
-    return { matches: [], count: 0 }
+  if (applyMinOdd) {
+    const rows: MatchListRow[] = []
+    for (let offset = 0; offset < LIVE_MIN_ODD_FETCH_MAX_ROWS; offset += LIVE_MIN_ODD_CHUNK_SIZE) {
+      const { data: chunk, error } = await createMatchesQuery().range(
+        offset,
+        offset + LIVE_MIN_ODD_CHUNK_SIZE - 1
+      )
+      if (error) {
+        console.error('Error fetching matches:', error)
+        return { matches: [], count: 0 }
+      }
+      const batch = (chunk || []) as MatchListRow[]
+      rows.push(...batch)
+      if (batch.length < LIVE_MIN_ODD_CHUNK_SIZE) break
+    }
+    data = rows
+  } else {
+    const result = await createMatchesQuery().range(start, end)
+    if (result.error) {
+      console.error('Error fetching matches:', result.error)
+      return { matches: [], count: 0 }
+    }
+    data = result.data as MatchListRow[] | null
+    count = result.count
   }
 
   const matches: WinamaxMatch[] = (data || []).map((match: MatchListRow) => {
@@ -168,9 +215,17 @@ const { data: matchesData, pending } = await useAsyncData('matches', async () =>
     }
   })
 
+  if (applyMinOdd) {
+    const filtered = await filterMatchesByMinOddExcludingMatchNul(client, matches, activeMinOdd)
+    return {
+      matches: filtered.slice(start, end + 1),
+      count: filtered.length
+    }
+  }
+
   return {
     matches,
-    count: count || 0
+    count: count ?? 0
   }
 }, {
   watch: [page, filters],
