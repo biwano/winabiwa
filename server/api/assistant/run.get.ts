@@ -2,6 +2,8 @@ import { serverSupabaseServiceRole } from '#supabase/server'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import * as R from 'remeda'
 import type { Database } from '../../../app/types/database.types.js'
+import { MATCH_NUL_OUTCOME_LABEL } from '../../../app/features/matches/constants/outcomes.js'
+import { analyzeMnamt } from './rules/mnamt.js'
 import { analyzeReversal } from './rules/reversal.js'
 import { analyzeSiege } from './rules/siege.js'
 import { analyzeTired } from './rules/tired.js'
@@ -11,6 +13,7 @@ import {
   SIEGE_TAG_CODE,
   TIRED_TAG_CODE,
   REVERSAL_TAG_CODE,
+  MNAMT_TAG_CODE,
   isRuleCode,
   type RuleCode,
   type LiveDataContext,
@@ -150,6 +153,18 @@ async function fetchLiveDataContext(
     outsider: {
       odds: [],
       label: ''
+    },
+    home: {
+      odds: [],
+      label: ''
+    },
+    draw: {
+      odds: [],
+      label: ''
+    },
+    away: {
+      odds: [],
+      label: ''
     }
   }))
   const liveMatchStartById = R.mapToObj(
@@ -225,6 +240,35 @@ async function fetchLiveDataContext(
     const favoriteOutcome = favoriteOutcomeId === null ? null : (outcomesById[favoriteOutcomeId] || null)
     const outsiderOutcome = outsiderOutcomeId === null ? null : (outcomesById[outsiderOutcomeId] || null)
 
+    let homeOutcomeId: number | null = null
+    let drawOutcomeId: number | null = null
+    let awayOutcomeId: number | null = null
+
+    for (const outcomeId of outcomeIds) {
+      const outcome = outcomesById[outcomeId]
+      if (!outcome) {
+        continue
+      }
+
+      if (normalizeValue(outcome.label) === MATCH_NUL_OUTCOME_LABEL) {
+        drawOutcomeId = outcomeId
+        continue
+      }
+
+      const side = inferSideFromOutcome(outcome.label, outcome.code, match)
+      if (side === 'home') {
+        homeOutcomeId = outcomeId
+      } else if (side === 'away') {
+        awayOutcomeId = outcomeId
+      } else if (side === 'draw') {
+        drawOutcomeId = outcomeId
+      }
+    }
+
+    const homeOutcome = homeOutcomeId === null ? null : (outcomesById[homeOutcomeId] || null)
+    const drawOutcome = drawOutcomeId === null ? null : (outcomesById[drawOutcomeId] || null)
+    const awayOutcome = awayOutcomeId === null ? null : (outcomesById[awayOutcomeId] || null)
+
     return {
       ...match,
       favorite: {
@@ -235,6 +279,18 @@ async function fetchLiveDataContext(
       outsider: {
         odds: outsiderOutcomeId === null ? [] : (oddsByOutcome[outsiderOutcomeId] || []),
         label: outsiderOutcome?.label || ''
+      },
+      home: {
+        odds: homeOutcomeId === null ? [] : (oddsByOutcome[homeOutcomeId] || []),
+        label: homeOutcome?.label || ''
+      },
+      draw: {
+        odds: drawOutcomeId === null ? [] : (oddsByOutcome[drawOutcomeId] || []),
+        label: drawOutcome?.label || ''
+      },
+      away: {
+        odds: awayOutcomeId === null ? [] : (oddsByOutcome[awayOutcomeId] || []),
+        label: awayOutcome?.label || ''
       }
     }
   })
@@ -314,12 +370,14 @@ export default defineEventHandler(async (event) => {
     const taggedByRule: Record<RuleCode, number> = {
       [SIEGE_TAG_CODE]: 0,
       [TIRED_TAG_CODE]: 0,
-      [REVERSAL_TAG_CODE]: 0
+      [REVERSAL_TAG_CODE]: 0,
+      [MNAMT_TAG_CODE]: 0
     }
     const matchIdsByRule: Record<RuleCode, Set<number>> = {
       [SIEGE_TAG_CODE]: new Set<number>(),
       [TIRED_TAG_CODE]: new Set<number>(),
-      [REVERSAL_TAG_CODE]: new Set<number>()
+      [REVERSAL_TAG_CODE]: new Set<number>(),
+      [MNAMT_TAG_CODE]: new Set<number>()
     }
     const allTaggedMatchIds = new Set<number>()
     for (const match of context.liveMatches) {
@@ -331,6 +389,9 @@ export default defineEventHandler(async (event) => {
       }
       if (analyzeReversal(match)) {
         matchIdsByRule[REVERSAL_TAG_CODE].add(match.id)
+      }
+      if (analyzeMnamt(match, now)) {
+        matchIdsByRule[MNAMT_TAG_CODE].add(match.id)
       }
     }
 

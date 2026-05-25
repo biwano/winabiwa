@@ -91,7 +91,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - `Tags`
   - Tags Column:
     - Desktop table includes a `Tags` column.
-    - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`).
+    - The column displays all tag codes linked to the match (for example: `SIEGE`, `TIRED`, `REVERSAL`, `MNAMT`).
     - Each assistant tag badge uses the same chip styling as today (for example: small, primary subtle variant) and the same single assistant-tag color (no per-rule color distinction).
     - On hover over a tag badge, show a tooltip (or equivalent accessible hint) with the tag assignment time from `winamax_match_tags.created_at`, formatted the same way as the `Start Time` column (locale datetime string, consistent with `match_start` rendering).
     - Match list data loading must return `created_at` per tag association (join row), not only fields from `match_tags`, so the UI can show assignment time without an extra round trip.
@@ -208,6 +208,23 @@ Server routes that drive Winamax ingestion and related database maintenance are 
     - The variation `(favorite_odd - outsider_odd)` must be greater than `15%` within less than `5` minutes.
   - Action:
     - Add the `REVERSAL` tag to the match.
+  - Rule name: `MNAMT` (Match nul avant mi-temps).
+  - Scope:
+    - Football only (`winamax_sports.name` exact value `Football`).
+    - Match score exactly `0:0`.
+    - Evaluation window: elapsed match time between `15` and `25` minutes (inclusive), relative to `winamax_matches.match_start`.
+  - Data:
+    - Uses the three main-bet 1X2 outcomes: home, draw (`match nul` label), away.
+    - Draw/home/away odds histories are preloaded in the assistant context (same pipeline as other rules).
+  - Condition (all must pass):
+    - **Anti-freeze**: between minutes `10` and `25`, the draw odd must not stay unchanged (tolerance `0.001`) for more than `3` consecutive minutes.
+    - **No draw rebound**: zero upward steps on the draw curve from kickoff through minute `25`.
+    - **Smooth decay**: draw odd slope is strictly negative on every consecutive tick in `0-25` minutes, with relative slope standard deviation `<= 35%` of mean absolute slope.
+    - **Minimum theta drop**: draw odd at the latest tick in `0-25` minutes is at least `5%` below the kickoff draw odd.
+    - **Mirror symmetry**: at minute `20`, home and away odds are each strictly above their respective kickoff odds.
+    - **Mirror while draw falls**: for every draw drop between minutes `15` and `25`, home and away odds must not decrease at the same timestamps.
+  - Action:
+    - Add the `MNAMT` tag to the match.
 - **Idempotency**:
   - A match can have multiple tags.
   - The same tag must not be duplicated for the same match.
@@ -215,7 +232,7 @@ Server routes that drive Winamax ingestion and related database maintenance are 
   - The endpoint returns a summary including:
     - Number of live matches analyzed.
     - Number of matches tagged (global).
-    - Number of matches tagged per rule (`SIEGE`, `TIRED`, `REVERSAL`, ...).
+    - Number of matches tagged per rule (`SIEGE`, `TIRED`, `REVERSAL`, `MNAMT`, ...).
     - Number of tags created (or already existing/no-op).
     - The summary must indicate whether execution was scoped (`matchId` mode) or global batch mode.
 

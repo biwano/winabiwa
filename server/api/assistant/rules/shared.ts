@@ -1,4 +1,26 @@
-import type { OddRow } from './types.js'
+import type { MatchRow, OddRow } from './types.js'
+
+export function getMatchStartMs(match: MatchRow): number | null {
+  if (!match.match_start) {
+    return null
+  }
+
+  const matchStartMs = new Date(match.match_start).getTime()
+  if (Number.isNaN(matchStartMs)) {
+    return null
+  }
+
+  return matchStartMs
+}
+
+export function getElapsedMs(timestamp: string, matchStartMs: number): number | null {
+  const timestampMs = new Date(timestamp).getTime()
+  if (Number.isNaN(timestampMs)) {
+    return null
+  }
+
+  return timestampMs - matchStartMs
+}
 
 export function pickLatestOdd(history: OddRow[]): OddRow | null {
   return history[history.length - 1] || null
